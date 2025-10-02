@@ -34,52 +34,78 @@
     }
     button:hover {
       background: #45a049;
-    }
-    #opsiSatuanKedua {
-      margin-top: 15px;
-      padding: 10px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-  </style>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambah Bahan</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 </head>
-<body>
+<body class="bg-light">
 
-  <h2>Tambah Bahan</h2>
+  <div class="container py-3">
+    <h4 class="text-center mb-3">Tambah Bahan</h4>
+    <form id="formTambahBahan" class="card p-3 shadow-sm">
 
-  <form id="formTambahBahan">
-    <label for="nama">Nama Bahan:</label>
-    <input type="text" id="nama" required>
+      <!-- Nama Bahan -->
+      <div class="mb-3">
+        <label for="nama" class="form-label">Nama Bahan</label>
+        <input type="text" id="nama" class="form-control" placeholder="Contoh: Tahu, Minyak" required>
+      </div>
 
-    <label for="jumlah">Jumlah Awal:</label>
-    <input type="number" id="jumlah" step="any" required>
+      <!-- Harga -->
+      <div class="mb-3">
+        <label for="harga" class="form-label">Harga Bahan</label>
+        <input type="number" id="harga" class="form-control" placeholder="Contoh: 15000" required>
+      </div>
 
-    <label for="satuan">Satuan Awal:</label>
-    <input type="text" id="satuan" placeholder="kg, liter, biji" required>
+      <!-- Jumlah Awal -->
+      <div class="mb-3">
+        <label for="jumlah" class="form-label">Jumlah Awal</label>
+        <input type="number" id="jumlah" class="form-control" placeholder="Contoh: 1, 5, 10" required>
+      </div>
 
-    <label for="harga">Harga Total:</label>
-    <input type="number" id="harga" step="any" required>
+      <!-- Satuan Awal -->
+      <div class="mb-3">
+        <label for="satuan" class="form-label">Satuan Awal</label>
+        <select id="satuan" class="form-select" required>
+          <option value="" disabled selected>Pilih satuan</option>
+          <option value="kg">Kilogram (kg)</option>
+          <option value="gram">Gram (g)</option>
+          <option value="liter">Liter (L)</option>
+          <option value="ml">Mililiter (ml)</option>
+          <option value="pcs">Pcs / Biji</option>
+          <option value="pack">Pack</option>
+          <option value="dus">Dus</option>
+          <option value="botol">Botol</option>
+        </select>
+      </div>
 
-    <label>
-      <input type="checkbox" id="punyaSatuanKedua"> Punya satuan kedua?
-    </label>
+      <!-- Satuan Kedua -->
+      <div class="mb-3">
+        <label for="satuan_kedua" class="form-label">Satuan Kedua</label>
+        <select id="satuan_kedua" class="form-select">
+          <option value="" disabled selected>Pilih satuan kedua</option>
+          <option value="gram">Gram</option>
+          <option value="ml">Mililiter</option>
+          <option value="potong">Potong</option>
+          <option value="sendok">Sendok</option>
+          <option value="gelas">Gelas</option>
+        </select>
+      </div>
 
-    <div id="opsiSatuanKedua" style="display:none;">
-      <label for="satuan_kedua">Satuan Kedua:</label>
-      <input type="text" id="satuan_kedua" placeholder="potong, ml, gram">
+      <!-- Jumlah Kedua -->
+      <div class="mb-3">
+        <label for="jumlah_kedua" class="form-label">Jumlah Kedua (konversi)</label>
+        <input type="number" id="jumlah_kedua" class="form-control" placeholder="Contoh: 1000 (1 kg = 1000 gram)">
+      </div>
 
-      <label for="konversi">Konversi (1 satuan_awal = ... satuan_kedua):</label>
-      <input type="number" id="konversi" min="1">
+      <!-- Tombol Simpan -->
+      <button type="submit" class="btn btn-primary w-100">💾 Simpan Bahan</button>
+    </form>
+  </div>
 
-      <label for="harga_per_satuan_kedua">Harga per Satuan Kedua:</label>
-      <input type="number" id="harga_per_satuan_kedua" readonly>
-    </div>
-
-    <button type="submit">Tambah Bahan</button>
-  </form>
-
-  <!-- Script JS -->
   <script type="module" src="/tahupts/assets/js/form.js"></script>
 </body>
 </html>
