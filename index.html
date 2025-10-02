@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Aplikasi Bisnis</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md p-4 flex justify-between">
+    <h1 class="text-lg font-bold">📊 Aplikasi Bisnis</h1>
+    <ul class="flex space-x-6">
+      <li><a href="#" class="nav-link text-blue-600 font-semibold" data-page="transaksi">Transaksi</a></li>
+      <li><a href="#" class="nav-link" data-page="produk">Produk Jadi</a></li>
+      <li><a href="#" class="nav-link" data-page="bahan">Bahan Baku</a></li>
+      <li><a href="#" class="nav-link" data-page="keuangan">Keuangan</a></li>
+    </ul>
+  </nav>
+
+  <!-- Konten -->
+  <main id="content" class="p-6">
+    <!-- default halaman transaksi -->
+    <h2 class="text-xl font-bold mb-4">Halaman Transaksi</h2>
+    <form id="form-transaksi" class="space-y-3 bg-white p-4 rounded shadow-md">
+      <label class="block">
+        Produk:
+        <input type="text" class="border w-full p-2 rounded" placeholder="Nama produk">
+      </label>
+      <label class="block">
+        Jumlah:
+        <input type="number" class="border w-full p-2 rounded" placeholder="Qty">
+      </label>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
+    </form>
+  </main>
+
+  <script>
+    // Ganti konten sesuai menu navbar
+    const content = document.getElementById("content");
+    const pages = {
+      transaksi: `
+        <h2 class="text-xl font-bold mb-4">Halaman Transaksi</h2>
+        <form class="space-y-3 bg-white p-4 rounded shadow-md">
+          <label class="block">Produk:
+            <input type="text" class="border w-full p-2 rounded" placeholder="Nama produk">
+          </label>
+          <label class="block">Jumlah:
+            <input type="number" class="border w-full p-2 rounded" placeholder="Qty">
+          </label>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
+        </form>
+      `,
+      produk: `<h2 class="text-xl font-bold">Halaman Produk Jadi</h2>`,
+      bahan: `<h2 class="text-xl font-bold">Halaman Bahan Baku</h2>`,
+      keuangan: `<h2 class="text-xl font-bold">Halaman Keuangan</h2>`
+    };
+
+    document.querySelectorAll(".nav-link").forEach(link => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const page = link.dataset.page;
+        content.innerHTML = pages[page];
+        document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("text-blue-600", "font-semibold"));
+        link.classList.add("text-blue-600",
