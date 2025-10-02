@@ -31,7 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const jumlah_awal = parseFloat(document.getElementById("jumlah").value)
     const satuan_awal = document.getElementById("satuan").value.trim()
 import { supabase } from './supabase.js'
+// ✅ Import Supabase client
+import { supabase } from './supabase.js'
 
+// ✅ DOM Ready
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formTambahBahan")
 
