@@ -1,5 +1,5 @@
 // Integrasi Supabase Client
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // ⚠️ Ganti dengan project Supabase kamu
 const SUPABASE_URL = "https://vrpdotzqyesnhewynxta.supabase.co"
