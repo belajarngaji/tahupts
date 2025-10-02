@@ -2,56 +2,60 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Tambah Bahan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Tambah Bahan</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+    form { background: white; padding: 16px; border-radius: 8px; max-width: 400px; margin: auto; }
+    label { display: block; margin-bottom: 8px; font-weight: bold; }
+    input, select { width: 100%; padding: 8px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; }
+    .hidden { display: none; }
+    button { background: #007bff; color: white; padding: 10px; border: none; border-radius: 4px; width: 100%; }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
+<body>
 
-  <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-md">
-    <h2 class="text-xl font-bold mb-4">Tambah Bahan Baku</h2>
+  <h2>Tambah Bahan</h2>
 
-    <form id="formTambah" class="space-y-4">
-      <div>
-        <label class="block font-medium">Nama Bahan:</label>
-        <input type="text" name="nama" class="w-full border rounded p-2" placeholder="contoh: Tepung Terigu" required>
-      </div>
+  <form id="formBahan">
+    <label>Nama Bahan</label>
+    <input type="text" name="nama" required>
 
-      <div>
-        <label class="block font-medium">Jumlah Awal:</label>
-        <input type="number" name="jumlah" class="w-full border rounded p-2" placeholder="contoh: 10" required>
-      </div>
+    <label>Jumlah Awal</label>
+    <input type="number" name="jumlah_awal" required>
 
-      <div>
-        <label class="block font-medium">Satuan:</label>
-        <select name="satuan" class="w-full border rounded p-2" required>
-          <option value="kg">Kilogram (kg)</option>
-          <option value="gram">Gram (gr)</option>
-          <option value="liter">Liter (L)</option>
-          <option value="ml">MiliLiter (ml)</option>
-          <option value="pcs">Pcs / Biji</option>
-        </select>
-      </div>
+    <label>Satuan Awal</label>
+    <select name="satuan_awal" required>
+      <option value="kg">kg</option>
+      <option value="gram">gram</option>
+      <option value="liter">liter</option>
+      <option value="ml">ml</option>
+      <option value="pcs">pcs</option>
+      <option value="biji">biji</option>
+    </select>
 
-      <div>
-        <label class="block font-medium">Harga per Satuan (Rp):</label>
-        <input type="number" name="harga" class="w-full border rounded p-2" placeholder="contoh: 15000" required>
-      </div>
+    <label>Harga Total (Rp)</label>
+    <input type="number" name="harga_total" required>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg">
-        Simpan
-      </button>
-    </form>
-  </div>
+    <!-- Tombol aktifkan satuan kedua -->
+    <label>
+      <input type="checkbox" id="useSecondUnit"> Gunakan Satuan Kedua
+    </label>
 
-  <script>
-    document.getElementById("formTambah").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(e.target).entries());
-      console.log("Data bahan baru:", data);
-      alert(`Bahan ${data.nama} (${data.jumlah} ${data.satuan}) dengan harga Rp${data.harga} berhasil ditambahkan!`);
-    });
-  </script>
+    <div id="secondUnitBox" class="hidden">
+      <label>Nama Satuan Kedua</label>
+      <input type="text" name="satuan_kedua" placeholder="contoh: potong">
 
+      <label>Konversi (1 satuan awal = berapa satuan kedua)</label>
+      <input type="number" name="konversi" placeholder="contoh: 1 biji = 5 potong">
+    </div>
+
+    <p id="preview" style="font-style: italic; color: gray;"></p>
+
+    <button type="submit">Simpan</button>
+  </form>
+
+  <!-- Load JS terpisah -->
+  <script src="/tahupts/assets/js/form.js"></script>
 </body>
 </html>
