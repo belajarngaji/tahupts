@@ -1,48 +1,83 @@
 import { supabase } from './supabase.js'
 
-// Ambil referensi form
-const form = document.getElementById("formTambahBahan")
+// ✅ DOM Ready
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("formTambahBahan")
+  const checkbox = document.getElementById("punyaSatuanKedua")
+  const opsiSatuanKedua = document.getElementById("opsiSatuanKedua")
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault()
+  const hargaInput = document.getElementById("harga")
+  const konversiInput = document.getElementById("konversi")
+  const hargaPerInput = document.getElementById("harga_per_satuan_kedua")
 
-  // Ambil data dari input
-  const nama = document.getElementById("nama").value
-  const jumlah_awal = parseFloat(document.getElementById("jumlah").value)
-  const satuan_awal = document.getElementById("satuan").value
-  const harga_total = parseFloat(document.getElementById("harga").value)
+  // ✅ Tampilkan / sembunyikan opsi satuan kedua
+  checkbox.addEventListener("change", () => {
+    opsiSatuanKedua.style.display = checkbox.checked ? "block" : "none"
+  })
 
-  // Data opsional (satuan kedua)
-  const satuan_kedua = document.getElementById("satuan_kedua").value || null
-  const konversi = document.getElementById("konversi").value 
-    ? parseInt(document.getElementById("konversi").value) 
-    : null
+  // ✅ Hitung otomatis harga per satuan kedua
+  konversiInput.addEventListener("input", () => {
+    const harga = parseFloat(hargaInput.value) || 0
+    const konversi = parseInt(konversiInput.value) || 0
+    hargaPerInput.value = (konversi > 0) ? (harga / konversi).toFixed(2) : ""
+  })
 
-  // Hitung harga per satuan kedua jika ada
-  let harga_per_satuan_kedua = null
-  if (satuan_kedua && konversi > 0) {
-    harga_per_satuan_kedua = harga_total / konversi
-  }
+  // ✅ Handle submit form
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault()
 
-  // Susun data untuk Supabase
-  const dataBahan = {
-    nama,
-    jumlah_awal,
-    satuan_awal,
-    harga_total,
-    satuan_kedua,
-    konversi,
-    harga_per_satuan_kedua
-  }
+    // Ambil data dari input dasar
+    const nama = document.getElementById("nama").value.trim()
+    const jumlah_awal = parseFloat(document.getElementById("jumlah").value)
+    const satuan_awal = document.getElementById("satuan").value.trim()
+    const harga_total = parseFloat(hargaInput.value)
 
-  // Insert ke Supabase
-  const { error } = await supabase.from("bahan").insert([dataBahan])
+    // Validasi dasar
+    if (!nama || !jumlah_awal || !satuan_awal || !harga_total) {
+      alert("⚠️ Harap isi semua data dasar (nama, jumlah, satuan, harga).")
+      return
+    }
 
-  if (error) {
-    alert("❌ Gagal simpan: " + error.message)
-    console.error(error)
-  } else {
-    alert("✅ Bahan berhasil ditambahkan!")
-    form.reset()
-  }
+    // Data opsional satuan kedua
+    let satuan_kedua = null
+    let konversi = null
+    let harga_per_satuan_kedua = null
+
+    if (checkbox.checked) {
+      satuan_kedua = document.getElementById("satuan_kedua").value.trim()
+      konversi = parseInt(konversiInput.value)
+
+      if (!satuan_kedua || !konversi || konversi <= 0) {
+        alert("⚠️ Jika memakai satuan kedua, isi nama dan konversinya dengan benar.")
+        return
+      }
+
+      harga_per_satuan_kedua = parseFloat(hargaPerInput.value)
+    }
+
+    // Susun data untuk disimpan
+    const dataBahan = {
+      nama,
+      jumlah_awal,
+      satuan_awal,
+      harga_total,
+      satuan_kedua,
+      konversi,
+      harga_per_satuan_kedua
+    }
+
+    console.log("📝 Data siap simpan:", dataBahan)
+
+    // Simpan ke Supabase
+    const { error } = await supabase.from("bahan").insert([dataBahan])
+
+    if (error) {
+      alert("❌ Gagal menyimpan: " + error.message)
+      console.error(error)
+    } else {
+      alert("✅ Bahan berhasil ditambahkan!")
+      form.reset()
+      opsiSatuanKedua.style.display = "none"
+    }
+  })
 })
