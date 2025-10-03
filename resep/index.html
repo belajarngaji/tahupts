@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administrasi Resep Produk Akhir</title>
     <link rel="stylesheet" href="/tahupts/assets/css/form.css">
+    <style>
+        /* Gaya dasar untuk produkBaruInputArea agar tombol dan input sejajar */
+        #produkBaruInputArea {
+            display: flex;
+            gap: 10px; /* Jarak antar elemen */
+            align-items: center;
+        }
+        #produkBaruInputArea input {
+            flex-grow: 1;
+        }
+    </style>
 </head>
 <body>
 
@@ -14,13 +25,26 @@
 
     <div class="container">
         <form id="formResepAkhir">
-            
-            <label for="namaProdukAkhir">Pilih/Ketik Produk Akhir:</label>
-            <input type="text" id="namaProdukAkhir" name="namaProdukAkhir" list="produkAkhirList" required>
-            <datalist id="produkAkhirList"></datalist>
+
+            <label for="namaProdukAkhirSelect">Nama Produk Akhir:</label>
+            <div id="produkSelectionContainer">
+                
+                <select id="namaProdukAkhirSelect" class="full-width" style="margin-bottom: 10px;">
+                    <option value="">-- Pilih Produk dari Katalog --</option>
+                    </select>
+                
+                <button type="button" id="tombolProdukBaru" class="secondary-button full-width" style="margin-bottom: 10px;">
+                    + Tambah Produk Akhir **BARU**
+                </button>
+
+                <div id="produkBaruInputArea" style="display: none;">
+                    <input type="text" id="namaProdukAkhirInputBaru" placeholder="Ketik Nama Produk Baru" required>
+                    <button type="button" id="tombolBatalBaru" class="tertiary-button">Batal</button>
+                </div>
+            </div>
 
             <input type="hidden" id="produkAkhirIdHidden">
-            
+
             <hr>
             <h3>Detail Produk & Pricing</h3>
             <div class="input-group">
@@ -40,12 +64,12 @@
 
             <hr>
             <h3>Resep per 1 Unit Produk Akhir</h3>
-            
+
             <div id="resepInputs">
                 </div>
-            
+
             <button type="button" id="tambahBahan">➕ Tambah Bahan/Intermediet</button>
-            
+
             <hr>
             <button type="submit">SIMPAN RESEP & PRICING</button>
 
