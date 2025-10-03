@@ -1,4 +1,4 @@
-// assets/js/admin_resep_akhir.js (Kode Lengkap yang Diperbarui)
+// assets/js/admin_resep_akhir.js (Kode Lengkap yang Diperbarui dan Diperbaiki)
 
 import { supabase } from './supabase.js';
 
@@ -14,8 +14,15 @@ let currentRecipeHPP = 0;
 let currentRecipeItems = []; 
 let isNewProductMode = false; // Status mode pemilihan
 
+// --- DEKLARASI GLOBAL UNTUK ELEMEN DOM YANG DIGUNAKAN DI FUNGSI GLOBAL/LISTENER ---
+// INI PENTING UNTUK MENGHINDARI ReferenceError dan MEMASTIKAN readOnly dapat diakses.
+let satuanJualInput;
+let hargaJualInput;
+let marginInput;
+// -----------------------------------------------------------------------------------
+
+
 // --- FUNGSI VALIDASI PRICING & HPP ---
-// (Tidak ada perubahan di bagian ini)
 const calculateIdealPrice = (hpp, marginTarget) => {
     if (hpp <= 0) return 0;
     if (marginTarget <= 0 || marginTarget > 99) return hpp; 
@@ -30,9 +37,11 @@ const displayPricingFeedback = (hpp, hargaJual, targetMargin) => {
         feedbackDiv = document.createElement('div');
         feedbackDiv.id = 'pricingFeedback';
         feedbackDiv.style.margin = '15px 0';
-        // Asumsi hargaJualInput sudah didefinisikan di DOMContentLoaded scope
         try { 
-            hargaJualInput.parentNode.parentNode.after(feedbackDiv);
+            // Cek apakah variabel sudah diinisialisasi sebelum mencoba menggunakannya
+            if (hargaJualInput) {
+                hargaJualInput.parentNode.parentNode.after(feedbackDiv);
+            }
         } catch (e) {
             console.warn("Pricing feedback target not found yet.");
         }
@@ -40,7 +49,7 @@ const displayPricingFeedback = (hpp, hargaJual, targetMargin) => {
 
     const marginActual = (hargaJual > 0) ? ((hargaJual - hpp) / hargaJual) * 100 : -100;
     const hargaIdeal = calculateIdealPrice(hpp, targetMargin);
-    
+
     let htmlContent = '';
     let color = 'blue';
 
@@ -89,8 +98,7 @@ const recalculateRecipeHPP = () => {
             }
 
             currentRecipeHPP += jumlah * itemHpp;
-            
-            // Simpan tipe untuk logic submit
+
             currentRecipeItems.push({ 
                 itemId: itemId, 
                 jumlah: jumlah, 
@@ -101,11 +109,13 @@ const recalculateRecipeHPP = () => {
         }
     });
 
-    displayPricingFeedback(
-        currentRecipeHPP, 
-        parseFloat(hargaJualInput.value) || 0, 
-        parseFloat(marginInput.value) || 0
-    );
+    if (hargaJualInput && marginInput) { // Cek ketersediaan variabel DOM
+        displayPricingFeedback(
+            currentRecipeHPP, 
+            parseFloat(hargaJualInput.value) || 0, 
+            parseFloat(marginInput.value) || 0
+        );
+    }
 };
 // --- END FUNGSI VALIDASI PRICING ---
 
@@ -117,16 +127,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const namaProdukAkhirSelect = document.getElementById('namaProdukAkhirSelect');
     const tombolProdukBaru = document.getElementById('tombolProdukBaru');
     const produkBaruInputArea = document.getElementById('produkBaruInputArea');
-    const namaProdukAkhirInput = document.getElementById('namaProdukAkhirInputBaru'); // PENTING: ID BARU
+    const namaProdukAkhirInput = document.getElementById('namaProdukAkhirInputBaru');
     const tombolBatalBaru = document.getElementById('tombolBatalBaru');
-    
-    // --- DOM ELEMENTS LAMA (TETAP) ---
+
+    // --- DOM ELEMENTS LAMA (INISIALISASI VARIABEL GLOBAL TANPA 'const') ---
     const produkAkhirIdHidden = document.getElementById('produkAkhirIdHidden');
     const resepInputs = document.getElementById('resepInputs');
     const tambahBahanBtn = document.getElementById('tambahBahan');
-    const satuanJualInput = document.getElementById('satuanJual');
-    const hargaJualInput = document.getElementById('hargaJualDefault');
-    const marginInput = document.getElementById('targetMargin');
+    
+    // PENTING: Inisialisasi variabel global yang dideklarasikan di awal file
+    satuanJualInput = document.getElementById('satuanJual');
+    hargaJualInput = document.getElementById('hargaJualDefault');
+    marginInput = document.getElementById('targetMargin');
+    
     const message = document.getElementById('message');
 
 
@@ -134,26 +147,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetFormMode = (newMode) => {
         isNewProductMode = newMode;
         document.getElementById('pricingFeedback')?.remove();
-        
+
         resepInputs.innerHTML = '';
         tambahBarisResep();
-        
+
         // Reset data
         produkAkhirIdHidden.value = '';
         satuanJualInput.value = '';
         hargaJualInput.value = 0;
         marginInput.value = 0;
-        satuanJualInput.readOnly = newMode;
         
+        // PERBAIKAN FINAL: Logic readOnly Satuan Jual
+        // Jika newMode=true (Produk Baru), readOnly=false (BISA DIEDIT)
+        // Jika newMode=false (Katalog), readOnly=true (TERKUNCI)
+        satuanJualInput.readOnly = !newMode; 
+
         if (newMode) {
             // Mode Produk Baru
             message.textContent = 'Mode Produk Baru: Tentukan nama, satuan, resep, dan pricing.';
             namaProdukAkhirSelect.style.display = 'none';
             tombolProdukBaru.style.display = 'none';
-            produkBaruInputArea.style.display = 'flex'; // 'flex' untuk menampilkan input
+            produkBaruInputArea.style.display = 'flex'; 
             namaProdukAkhirInput.required = true;
             namaProdukAkhirSelect.value = '';
-            namaProdukAkhirInput.value = ''; // Kosongkan input baru
+            namaProdukAkhirInput.value = ''; 
             namaProdukAkhirInput.focus();
         } else {
             // Mode Pilih Katalog
@@ -163,18 +180,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             produkBaruInputArea.style.display = 'none';
             namaProdukAkhirInput.required = false;
         }
-        recalculateRecipeHPP(); // Reset HPP
+        recalculateRecipeHPP(); 
     };
-    
+
     // --- LISTENER MODE PEMILIHAN BARU ---
-    
-    // A. Listener Tombol 'Tambah Produk Baru'
     tombolProdukBaru.addEventListener('click', () => {
         resetFormMode(true);
         displayPricingFeedback(0, 0, 0); 
     });
-    
-    // B. Listener Tombol 'Batal' Produk Baru
+
     tombolBatalBaru.addEventListener('click', () => {
         resetFormMode(false);
     });
@@ -184,13 +198,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedOption = namaProdukAkhirSelect.options[namaProdukAkhirSelect.selectedIndex];
         const nama = selectedOption.textContent.trim();
         const produkInfo = masterData.produkAkhir[nama];
-        
-        // Jika opsi default dipilih, reset mode
+
         if (!produkInfo) {
-            resetFormMode(false);
+            resetFormMode(false); // Reset ke mode katalog jika opsi default dipilih
             return;
         }
-        
+
         // SKENARIO 1: PRODUK LAMA dipilih
         resepInputs.innerHTML = ''; 
         currentRecipeHPP = 0;
@@ -200,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         satuanJualInput.value = produkInfo.satuan_jual;
         hargaJualInput.value = produkInfo.harga_jual_default || 0;
         marginInput.value = produkInfo.target_margin || 0;
-        satuanJualInput.readOnly = true;
+        satuanJualInput.readOnly = true; // KUNCI kembali saat produk lama dipilih
 
         await loadResep(produkInfo.id);
         recalculateRecipeHPP(); 
@@ -209,12 +222,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // D. Listener saat mengetik Nama Produk Baru (Jika dalam mode produk baru)
     namaProdukAkhirInput.addEventListener('input', () => {
-        // Recalculate HPP tidak perlu, karena HPP hanya bergantung pada resep (yang sudah ada atau baru dibuat)
         message.textContent = `Mode Produk Baru: ${namaProdukAkhirInput.value}`;
     });
-    
-    
-    // --- LISTENER PRICING (TETAP SAMA) ---
+
+
+    // --- LISTENER PRICING (Memastikan variabel global digunakan) ---
     hargaJualInput.addEventListener('input', () => {
         displayPricingFeedback(currentRecipeHPP, parseFloat(hargaJualInput.value) || 0, parseFloat(marginInput.value) || 0);
     });
@@ -223,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
 
-    // --- 1. AMBIL DATA MASTER (Diperbarui untuk mengisi SELECT) ---
+    // --- 1. AMBIL DATA MASTER ---
     const loadMasterData = async () => {
         message.textContent = 'Memuat data master...';
 
@@ -239,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         masterData.bahanBakuHpp = {};
         bb.forEach(b => { masterData.bahanBakuHpp[b.id] = { hpp_per_unit: b.harga_pokok_per_unit || 0, satuan: b.satuan_stok }; });
-        
+
         masterData.produkIntermedietHpp = {};
         pi.forEach(i => { masterData.produkIntermedietHpp[i.id] = { hpp_per_unit: i.hpp_per_unit || 0, satuan: i.satuan }; });
 
@@ -251,7 +263,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         masterData.produkAkhir = {};
         pa.forEach(p => {
             const option = document.createElement('option');
-            // Gunakan nama produk sebagai teks dan value (untuk kemudahan lookup)
             option.value = p.nama_produk; 
             option.textContent = p.nama_produk;
             namaProdukAkhirSelect.appendChild(option);
@@ -290,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // --- 3. FUNGSI UTILITY (tambahBarisResep Disesuaikan) ---
+    // --- 3. FUNGSI UTILITY (tambahBarisResep) ---
     const createItemSelect = (name, data, isBahanBaku) => {
         const select = document.createElement('select');
         select.name = name;
@@ -376,7 +387,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 itemSelectContainer.appendChild(itemSelect);
 
                 if (resepData.id && resepData.tipe) {
-                    // Cek apakah item ini termasuk tipe yang dipilih (bahan_baku_id atau produk_intermediet_id)
                     const targetName = tipe.replace('_', '') + 'Id';
                     if (resepData.tipe.includes(tipe)) {
                          itemSelect.value = resepData.id;
@@ -410,14 +420,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     tambahBahanBtn.addEventListener('click', () => tambahBarisResep());
 
-    // --- 4. LOGIKA SUBMIT (Disesuaikan untuk mode baru/lama) ---
+    // --- 4. LOGIKA SUBMIT ---
     formResep.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         // --- 4.0 TENTUKAN NAMA PRODUK AKHIR ---
         let namaProduk;
         const produkInfoLama = isNewProductMode ? null : masterData.produkAkhir[namaProdukAkhirSelect.value];
-        
+
         if (isNewProductMode) {
             namaProduk = namaProdukAkhirInput.value.trim();
         } else if (namaProdukAkhirSelect.value) {
@@ -453,7 +463,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 4.1 PENANGANAN PRODUK BARU
         if (isNewProductMode) {
-            // Produk baru, perlu dibuat terlebih dahulu
             message.textContent = `Produk baru ditemukan: ${namaProduk}. Membuat entri baru...`;
 
             const { data: newProduk, error: insertError } = await supabase
@@ -495,44 +504,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 })
                 .eq('id', produkAkhirId);
 
-            if (pricingError) {
-                message.textContent = `❌ Gagal update pricing: ${pricingError.message}`;
-                message.className = 'error';
-                return;
-            }
-        }
-
-
-        // 4.3 Hapus Resep Lama
-        const { error: deleteError } = await supabase
-            .from('resep_akhir')
-            .delete()
-            .eq('produk_akhir_id', produkAkhirId);
-
-        if (deleteError) {
-            message.textContent = `❌ Gagal menghapus resep lama: ${deleteError.message}`;
-            message.className = 'error';
-            return;
-        }
-
-        // 4.4 Kumpulkan dan Insert Resep Baru
-        const resepBaru = currentRecipeItems.map(item => ({
-            produk_akhir_id: produkAkhirId,
-            // Perbaikan Sintaks!
-            bahan_baku_id: item.tipe === 'bahan_baku' ? item.itemId : null,
-            produk_intermediet_id: item.tipe === 'produk_intermediet' ? item.itemId : null, 
-            jumlah_dipakai: item.jumlah,
-            satuan_dipakai: item.itemSatuan,
-        }));
-
-        if (resepBaru.length > 0) {
-            const { error: insertError } = await supabase
-                .from('resep_akhir')
-                .insert(resepBaru);
-
             if (insertError) {
                 message.textContent = `❌ Gagal menyimpan resep baru: ${insertError.message}`;
-                message.className = 'error'; // <--- FIX: Tambahkan kurung tutup dan message.className
+                message.className = 'error'; 
                 return;
             }
         }
@@ -542,15 +516,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await loadMasterData();
         formResep.reset();
-        satuanJualInput.readOnly = false;
         resepInputs.innerHTML = '';
         tambahBarisResep();
         document.getElementById('pricingFeedback')?.remove(); 
-        resetFormMode(false); // Kembali ke mode Katalog setelah submit
+        resetFormMode(false);
     });
-    // END formResep.addEventListener('submit' ... )
 
     // Inisialisasi
     await loadMasterData();
-    resetFormMode(false); // Pastikan mode awal adalah Pilih Katalog
+    resetFormMode(false); 
 });
