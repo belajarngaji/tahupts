@@ -1,15 +1,21 @@
-// assets/js/admin_resep_akhir.js
+// assets/js/admin_resep_akhir.js (Kode Lengkap yang Diperbarui)
+
 import { supabase } from './supabase.js';
 
 let masterData = {
-    produkAkhir: [],
+    produkAkhir: {}, // Map: { 'Nama Produk': {id, satuan_jual, harga_jual_default, target_margin}, ... }
     bahanBaku: [],
     produkIntermediet: [],
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
     const formResep = document.getElementById('formResepAkhir');
-    const produkSelect = document.getElementById('produkAkhirSelect');
+    
+    // Elemen Input Baru
+    const namaProdukAkhirInput = document.getElementById('namaProdukAkhir'); 
+    const datalist = document.getElementById('produkAkhirList');
+    const produkAkhirIdHidden = document.getElementById('produkAkhirIdHidden');
+    
     const resepInputs = document.getElementById('resepInputs');
     const tambahBahanBtn = document.getElementById('tambahBahan');
     const satuanJualInput = document.getElementById('satuanJual');
@@ -19,7 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- 1. AMBIL DATA MASTER ---
     const loadMasterData = async () => {
-        // Ambil semua data produk yang dibutuhkan (produk_akhir, bahan_baku_inti, produk_intermediet)
+        message.textContent = 'Memuat data master...';
+
+        // Ambil semua data produk yang dibutuhkan
         const { data: pa, error: paError } = await supabase.from('produk_akhir').select('*');
         const { data: bb, error: bbError } = await supabase.from('bahan_baku_inti').select('id, nama_bahan, satuan_stok');
         const { data: pi, error: piError } = await supabase.from('produk_intermediet').select('id, nama_intermediet, satuan');
@@ -30,21 +38,83 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        masterData.produkAkhir = pa;
         masterData.bahanBaku = bb;
         masterData.produkIntermediet = pi;
 
-        // Isi dropdown Produk Akhir
-        produkSelect.innerHTML = '<option value="">-- Pilih atau Tambah Produk --</option>';
+        // Isi Datalist Produk Akhir
+        datalist.innerHTML = ''; 
+        masterData.produkAkhir = {}; // Reset Map
         pa.forEach(p => {
             const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nama_produk;
-            produkSelect.appendChild(option);
+            option.value = p.nama_produk;
+            datalist.appendChild(option);
+            
+            // Simpan data di map untuk lookup cepat
+            masterData.produkAkhir[p.nama_produk] = p;
         });
+        
+        message.textContent = 'Data siap. Pilih atau ketik nama produk.';
     };
     
-    // --- 2. FUNGSI UTILITY ---
+    // --- 2. LISTENER FLEKSIBEL PRODUK AKHIR ---
+    namaProdukAkhirInput.addEventListener('input', async () => {
+        const nama = namaProdukAkhirInput.value.trim();
+        const produkInfo = masterData.produkAkhir[nama];
+        
+        resepInputs.innerHTML = ''; // Kosongkan resep
+
+        if (produkInfo) {
+            // --- SKENARIO 1: PRODUK LAMA (Dipilih dari Datalist) ---
+            produkAkhirIdHidden.value = produkInfo.id;
+            satuanJualInput.value = produkInfo.satuan_jual;
+            hargaJualInput.value = produkInfo.harga_jual_default || 0;
+            marginInput.value = produkInfo.target_margin || 0;
+            satuanJualInput.readOnly = true; // Satuan dikunci jika produk sudah ada
+
+            // Muat Resep Lama
+            await loadResep(produkInfo.id);
+
+        } else {
+            // --- SKENARIO 2: PRODUK BARU (Diketik Manual) ---
+            produkAkhirIdHidden.value = ''; // Reset ID
+            satuanJualInput.value = '';
+            hargaJualInput.value = 0;
+            marginInput.value = 0;
+            satuanJualInput.readOnly = false; // Boleh diisi manual
+            
+            tambahBarisResep(); // Tambahkan baris resep kosong untuk produk baru
+        }
+    });
+    
+    // --- FUNGSI BARU: MEMUAT RESEP LAMA ---
+    const loadResep = async (produkAkhirId) => {
+        const { data: resep, error: resepError } = await supabase
+            .from('resep_akhir')
+            .select('bahan_baku_id, produk_intermediet_id, jumlah_dipakai, satuan_dipakai')
+            .eq('produk_akhir_id', produkAkhirId);
+
+        if (resepError) {
+            message.textContent = '❌ Gagal memuat resep lama.';
+            return;
+        }
+        
+        if (resep.length > 0) {
+            resep.forEach(r => {
+                const tipe = r.bahan_baku_id ? 'bahan_baku' : 'produk_intermediet';
+                const id = r.bahan_baku_id || r.produk_intermediet_id;
+                tambahBarisResep({ 
+                    tipe: tipe, 
+                    id: id, 
+                    jumlah_dipakai: r.jumlah_dipakai, 
+                    satuan_dipakai: r.satuan_dipakai 
+                });
+            });
+        } else {
+             tambahBarisResep();
+        }
+    }
+
+    // --- 3. FUNGSI UTILITY (tambahBarisResep Disesuaikan) ---
     const createItemSelect = (name, data, isBahanBaku) => {
         const select = document.createElement('select');
         select.name = name;
@@ -65,7 +135,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         div.className = 'input-group resep-row';
         div.style.alignItems = 'flex-end';
         
-        // 1. Pilih Tipe Bahan
+        // ... (Kode untuk membuat typeSelect, itemSelectContainer, jumlahInput, satuanInput, hapusBtn tetap sama) ...
+        
+        // Buat elemen input/select
         const typeSelect = document.createElement('select');
         typeSelect.className = 'item-type-select';
         typeSelect.style.flex = '1';
@@ -76,12 +148,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
         div.appendChild(typeSelect);
 
-        // 2. Kontainer untuk Select Item (akan diisi dinamis)
         const itemSelectContainer = document.createElement('div');
         itemSelectContainer.style.flex = '2';
         div.appendChild(itemSelectContainer);
 
-        // 3. Input Jumlah
         const jumlahInput = document.createElement('input');
         jumlahInput.type = 'number';
         jumlahInput.name = 'jumlahDipakai';
@@ -91,23 +161,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         jumlahInput.required = true;
         div.appendChild(jumlahInput);
         
-        // 4. Input Satuan (akan diisi otomatis/diisi manual saat select item)
         const satuanInput = document.createElement('input');
         satuanInput.type = 'text';
         satuanInput.name = 'satuanDipakai';
         satuanInput.placeholder = 'Satuan';
         satuanInput.value = resepData.satuan_dipakai || '';
         satuanInput.required = true;
-        satuanInput.readOnly = true; // Disarankan readonly agar konsisten dengan stok
+        satuanInput.readOnly = true; 
         div.appendChild(satuanInput);
 
-        // 5. Tombol Hapus
         const hapusBtn = document.createElement('button');
         hapusBtn.type = 'button';
         hapusBtn.textContent = 'Hapus';
         hapusBtn.className = 'hapus-bahan';
         hapusBtn.onclick = () => div.remove();
         div.appendChild(hapusBtn);
+
 
         // Logic dinamis untuk Select Item dan Satuan
         const updateItemSelect = (tipe) => {
@@ -127,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 itemSelectContainer.appendChild(itemSelect);
                 
                 // Set nilai awal jika data resep ada
-                if (resepData.id && resepData.tipe === tipe) {
+                if (resepData.id && resepData.tipe.replace('_', 'Id') === itemSelect.name) {
                     itemSelect.value = resepData.id;
                 }
                 
@@ -138,6 +207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         satuanInput.value = selectedItem.satuan_stok || selectedItem.satuan;
                     }
                 });
+                
+                // Trigger change event jika ada nilai awal (untuk mengisi satuanInput)
+                 if (itemSelect.value) itemSelect.dispatchEvent(new Event('change'));
             }
         };
 
@@ -154,80 +226,68 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     tambahBahanBtn.addEventListener('click', () => tambahBarisResep());
     
-    // --- 3. LISTENER PRODUK AKHIR ---
-    produkSelect.addEventListener('change', async () => {
-        const produkAkhirId = produkSelect.value;
-        resepInputs.innerHTML = ''; // Kosongkan resep lama
-
-        if (!produkAkhirId) {
-            satuanJualInput.value = '';
-            hargaJualInput.value = '';
-            marginInput.value = '';
-            return;
-        }
-
-        // Ambil data detail produk (satuan, harga jual, margin)
-        const produkInfo = masterData.produkAkhir.find(p => p.id === produkAkhirId);
-        satuanJualInput.value = produkInfo.satuan_jual;
-        hargaJualInput.value = produkInfo.harga_jual_default || 0;
-        marginInput.value = produkInfo.target_margin || 0;
-
-        // Ambil data resep yang sudah ada dari DB
-        const { data: resep, error: resepError } = await supabase
-            .from('resep_akhir')
-            .select('bahan_baku_id, produk_intermediet_id, jumlah_dipakai, satuan_dipakai');
-
-        if (resepError) {
-            message.textContent = '❌ Gagal memuat resep lama.';
-            return;
-        }
-        
-        // Isi form dengan resep yang sudah ada
-        if (resep.length > 0) {
-            resep.forEach(r => {
-                const tipe = r.bahan_baku_id ? 'bahan_baku' : 'produk_intermediet';
-                const id = r.bahan_baku_id || r.produk_intermediet_id;
-                tambahBarisResep({ 
-                    tipe: tipe, 
-                    id: id, 
-                    jumlah_dipakai: r.jumlah_dipakai, 
-                    satuan_dipakai: r.satuan_dipakai 
-                });
-            });
-        } else {
-             tambahBarisResep(); // Tambahkan baris kosong jika resep baru
-        }
-    });
-
     // --- 4. LOGIKA SUBMIT (Simpan Resep & Pricing) ---
     formResep.addEventListener('submit', async (e) => {
         e.preventDefault();
-        message.textContent = 'Menyimpan resep dan pricing...';
+        message.textContent = 'Memproses data...';
         message.className = '';
 
-        const produkAkhirId = produkSelect.value;
+        const namaProduk = namaProdukAkhirInput.value.trim();
+        const satuanJual = satuanJualInput.value.trim();
+        let produkAkhirId = produkAkhirIdHidden.value;
+        const produkInfoLama = masterData.produkAkhir[namaProduk];
+        
+        // 4.1 PENANGANAN PRODUK BARU
+        if (!produkAkhirId && !produkInfoLama) {
+            // Produk baru, perlu dibuat terlebih dahulu
+            message.textContent = `Produk baru ditemukan: ${namaProduk}. Membuat entri baru...`;
+            
+            const { data: newProduk, error: insertError } = await supabase
+                .from('produk_akhir')
+                .insert([{ 
+                    nama_produk: namaProduk, 
+                    satuan_jual: satuanJual,
+                    harga_jual_default: parseFloat(hargaJualInput.value) || 0,
+                    target_margin: parseFloat(marginInput.value) || 0,
+                }])
+                .select()
+                .single();
+
+            if (insertError) {
+                message.textContent = `❌ Gagal membuat produk akhir baru: ${insertError.message}`;
+                message.className = 'error';
+                return;
+            }
+            produkAkhirId = newProduk.id;
+        } else if (produkInfoLama) {
+            produkAkhirId = produkInfoLama.id;
+        }
+
         if (!produkAkhirId) {
-            message.textContent = 'Pilih Produk Akhir terlebih dahulu.';
-            message.className = 'error';
-            return;
+             message.textContent = 'ID Produk Akhir tidak ditemukan.';
+             message.className = 'error';
+             return;
         }
 
-        // 4.1 Update Pricing Produk Akhir
-        const { error: pricingError } = await supabase
-            .from('produk_akhir')
-            .update({
-                harga_jual_default: parseFloat(hargaJualInput.value),
-                target_margin: parseFloat(marginInput.value)
-            })
-            .eq('id', produkAkhirId);
+        // 4.2 Update Pricing Produk Akhir (Jika produk lama)
+        if (produkInfoLama) {
+            const { error: pricingError } = await supabase
+                .from('produk_akhir')
+                .update({
+                    harga_jual_default: parseFloat(hargaJualInput.value),
+                    target_margin: parseFloat(marginInput.value)
+                })
+                .eq('id', produkAkhirId);
 
-        if (pricingError) {
-            message.textContent = `❌ Gagal update pricing: ${pricingError.message}`;
-            message.className = 'error';
-            return;
+            if (pricingError) {
+                message.textContent = `❌ Gagal update pricing: ${pricingError.message}`;
+                message.className = 'error';
+                return;
+            }
         }
 
-        // 4.2 Hapus Resep Lama
+
+        // 4.3 Hapus Resep Lama
         const { error: deleteError } = await supabase
             .from('resep_akhir')
             .delete()
@@ -239,8 +299,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // 4.3 Kumpulkan dan Insert Resep Baru
+        // 4.4 Kumpulkan dan Insert Resep Baru
         const resepBaru = [];
+        let validResepCount = 0;
         document.querySelectorAll('.resep-row').forEach(row => {
             const tipe = row.querySelector('.item-type-select').value;
             const jumlah = parseFloat(row.querySelector('input[name="jumlahDipakai"]').value);
@@ -249,7 +310,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             let bahanId = row.querySelector('select[name="bahanBakuId"]')?.value || null;
             let intermedietId = row.querySelector('select[name="produkIntermedietId"]')?.value || null;
             
-            // Validasi: pastikan salah satu ID ada dan jumlah valid
             if ((bahanId || intermedietId) && jumlah > 0) {
                 resepBaru.push({
                     produk_akhir_id: produkAkhirId,
@@ -258,10 +318,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     jumlah_dipakai: jumlah,
                     satuan_dipakai: satuan,
                 });
+                validResepCount++;
             }
         });
 
-        if (resepBaru.length > 0) {
+        if (validResepCount > 0) {
             const { error: insertError } = await supabase
                 .from('resep_akhir')
                 .insert(resepBaru);
@@ -273,10 +334,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        message.textContent = `✅ Resep dan Pricing berhasil diperbarui untuk produk: ${produkSelect.options[produkSelect.selectedIndex].textContent}.`;
+        message.textContent = `✅ Resep dan Pricing berhasil diperbarui untuk produk: ${namaProduk}.`;
         message.className = 'success';
+        
+        // Muat ulang data agar produk baru muncul di datalist
+        await loadMasterData();
+        // Reset form hanya setelah semua operasi selesai
+        formResep.reset();
+        satuanJualInput.readOnly = false;
+        resepInputs.innerHTML = '';
+        tambahBarisResep(); // Tambahkan baris kosong awal
     });
 
     // Inisialisasi
     await loadMasterData();
+    tambahBarisResep(); // Tambahkan baris kosong awal saat halaman dimuat
 });
