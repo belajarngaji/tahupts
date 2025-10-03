@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Bahan Mentah (Stok Awal & Belanjaan)</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css"> 
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .numeric-col {
+            text-align: right;
+        }
+        .stock-col {
+            font-weight: bold;
+            color: #17a2b8; /* Warna biru untuk Stok */
+        }
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Daftar Bahan Mentah & Status Stok</h1>
+        <p>Tabel ini menampilkan semua Bahan Baku Inti (Bahan Mentah) dan jumlah Stok Terakhirnya.</p>
+    </header>
+
+    <div class="container">
+        <p id="message" class="loading-message">Memuat data...</p>
+        
+        <h2>Bahan Baku Mentah & Stok</h2>
+        <div id="bahanBakuTableContainer">
+            <table id="bahanBakuTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama Bahan Mentah</th>
+                        <th>Satuan Stok</th>
+                        <th class="numeric-col">HPP per Unit Terakhir</th>
+                        <th class="numeric-col stock-col">Stok Saat Ini</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+    
+    <script type="module" src="/tahupts/assets/js/raw.js"></script> 
+</body>
+</html>
