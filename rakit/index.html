@@ -14,34 +14,35 @@
 
     <div class="container">
         <form id="formPerakitan">
-            
+
             <label for="tanggal">Tanggal Perakitan/Penjualan:</label>
             <input type="date" id="tanggal" name="tanggal" required>
 
-            <label for="namaProdukAkhir">Nama Produk Akhir:</label>
-            <input type="text" id="namaProdukAkhir" name="namaProdukAkhir" list="produkAkhirList" required>
-            <datalist id="produkAkhirList"></datalist>
-            
+            <label for="namaProdukAkhir">Nama Produk Akhir (Katalog):</label>
+            <select id="namaProdukAkhir" name="namaProdukAkhir" required>
+                <option value="">-- Pilih Produk dari Resep --</option>
+                </select>
             <label for="jumlahRakit">Jumlah Porsi yang Dirakit (Stok Ditambahkan):</label>
             <input type="number" id="jumlahRakit" name="jumlahRakit" step="any" required>
-            
+
             <label for="hargaJual">Harga Jual per Unit (Opsional untuk Kalkulasi Laba):</label>
             <input type="number" id="hargaJual" name="hargaJual" step="any" placeholder="Contoh: 5000">
 
             <hr>
             <h3>Detail Resep per 1 Unit/Porsi</h3>
-            
-            <p class="message" style="color: blue;">(Detail resep ini harus diisi di tabel `resep_akhir` terlebih dahulu!)</p>
-            
+
+            <p class="message" style="color: blue;">(Detail resep harus ada di tabel `resep_akhir`.)</p>
+
             <div id="resepDetail">
                 </div>
-            
+
             <hr>
             <button type="submit">RAKIT & HITUNG COGS</button>
 
         </form>
         <p id="message"></p>
-    </div> 
-    <script type="module" src="/tahupts/assets/js/rakit.js"></script> 
+    </div>
+
+    <script type="module" src="/tahupts/assets/js/rakit.js"></script>
 </body>
 </html>
