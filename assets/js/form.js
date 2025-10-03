@@ -12,9 +12,14 @@ const KONVERSI_STANDAR = {
 // Fungsi Utama untuk Menghitung HPP
 function hitungHPP(jumlahBeli, hargaTotal, satuanStok, faktorKonversi) {
     const data = {};
-
-    // 1. Hitung HPP Satuan Awal (HPP_per_satuan_awal)
-    data.hpp_per_satuan_awal = hargaTotal / jumlahBeli;
+    
+    // Perbaikan 1: Pastikan HPP Satuan Awal aman dari pembagian nol
+    if (jumlahBeli > 0 && hargaTotal >= 0) {
+        data.hpp_per_satuan_awal = hargaTotal / jumlahBeli;
+    } else {
+        // Mengembalikan 0 jika input tidak valid (untuk memuaskan NOT NULL constraint)
+        data.hpp_per_satuan_awal = 0; 
+    }
 
     // 2. Cek apakah ada konversi (Satuan Kedua diisi)
     if (satuanStok) {
@@ -24,34 +29,36 @@ function hitungHPP(jumlahBeli, hargaTotal, satuanStok, faktorKonversi) {
             // Coba ambil dari kamus standar jika input kosong
             const konversiKey = `${document.getElementById('satuanBeli').value}_${satuanStok}`;
             finalFaktorKonversi = KONVERSI_STANDAR[konversiKey];
-            
+
             if (!finalFaktorKonversi) {
                 // Jika tidak ada faktor dan user tidak mengisi, ini adalah error fatal
                 return { error: 'Konversi tidak valid. Faktor konversi harus diisi manual atau definisikan faktor default.' };
             }
         }
-        
+
         // 2b. Hitung HPP Final
-        data.harga_pokok_final = data.hpp_per_satuan_awal / finalFaktorKonversi;
-        
+        // HPP Final hanya dihitung jika HPP Satuan Awal > 0
+        if (data.hpp_per_satuan_awal > 0) {
+            data.harga_pokok_final = data.hpp_per_satuan_awal / finalFaktorKonversi;
+        } else {
+            data.harga_pokok_final = 0;
+        }
+
         // 2c. Hitung Stok Akhir
         data.stok_saat_ini = jumlahBeli * finalFaktorKonversi;
-        
         data.faktor_konversi = finalFaktorKonversi; // Simpan faktor yang digunakan
-        
+
     } else {
         // Jika tidak ada konversi (Satuan Stok kosong)
         data.harga_pokok_final = null; 
         data.faktor_konversi = null;
         data.stok_saat_ini = jumlahBeli; // Stok adalah jumlah beli
     }
-    
-    // Pembulatan untuk mencegah angka desimal yang terlalu panjang
-    data.hpp_per_satuan_awal = parseFloat(data.hpp_per_satuan_awal.toFixed(4));
-    if (data.harga_pokok_final) {
-        data.harga_pokok_final = parseFloat(data.harga_pokok_final.toFixed(4));
-    }
-    data.stok_saat_ini = parseFloat(data.stok_saat_ini.toFixed(4));
+
+    // Pembulatan dan validasi terakhir (memastikan tidak ada NaN)
+    data.hpp_per_satuan_awal = isNaN(data.hpp_per_satuan_awal) ? 0 : parseFloat(data.hpp_per_satuan_awal.toFixed(4));
+    data.harga_pokok_final = isNaN(data.harga_pokok_final) ? null : parseFloat(data.harga_pokok_final.toFixed(4));
+    data.stok_saat_ini = isNaN(data.stok_saat_ini) ? 0 : parseFloat(data.stok_saat_ini.toFixed(4));
 
     return { data };
 }
@@ -88,9 +95,12 @@ document.addEventListener('DOMContentLoaded', () => {
             faktor_konversi: parseFloat(document.getElementById('faktorKonversi').value) || null,
         };
 
-        // Cek input wajib
-        if (!formData.tanggal || !formData.nama_item || !formData.kategori || !formData.jumlah_beli || !formData.satuan_beli || !formData.harga_total) {
-            message.textContent = 'Semua kolom bertanda wajib harus diisi.';
+        // Perbaikan 3: Validasi Keras untuk mencegah input 0 atau kosong masuk ke perhitungan
+        if (!formData.tanggal || !formData.nama_item || !formData.kategori || 
+            !formData.jumlah_beli || formData.jumlah_beli <= 0 || 
+            !formData.satuan_beli || !formData.harga_total) 
+        {
+            message.textContent = 'Pastikan Tanggal, Nama, Kategori, Jumlah Beli (>0), Satuan, dan Harga diisi.';
             message.className = 'error';
             return;
         }
@@ -108,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             message.className = 'error';
             return;
         }
-        
+
         // 3. Tentukan Tabel dan Objek Data Final
         let tableName;
         let dataToInsert = {};
@@ -117,19 +127,23 @@ document.addEventListener('DOMContentLoaded', () => {
             tableName = 'bahan_baku_inti';
             // Masukkan semua data ke bahan_baku_inti (semua kolom terisi)
             dataToInsert = {
-                tanggal: formData.tanggal,
+                // Perbaikan 4: Nama kolom yang sesuai dengan skema DB
+                tanggal_pembelian: formData.tanggal, // Sesuai dengan skema DB
                 nama_bahan: formData.nama_item,
                 kategori: formData.kategori,
                 jumlah_beli: formData.jumlah_beli,
                 satuan_beli: formData.satuan_beli,
                 harga_total: formData.harga_total,
-                satuan_stok: hppData.satuan_stok || formData.satuan_beli, // Gunakan Satuan Beli jika Satuan Stok NULL
-                faktor_konversi: hppData.faktor_konversi || 1, // Jika NULL, faktornya adalah 1
+                satuan_stok: hppData.satuan_stok || formData.satuan_beli,
+                faktor_konversi: hppData.faktor_konversi || 1, 
                 hpp_per_satuan_awal: hppData.hpp_per_satuan_awal,
-                harga_pokok_final: hppData.harga_pokok_final || hppData.hpp_per_satuan_awal, // Gunakan HPP awal jika final null
+                
+                // Perbaikan 5: Menggunakan 'harga_pokok_per_unit'
+                harga_pokok_per_unit: hppData.harga_pokok_final || hppData.hpp_per_satuan_awal, 
+                
                 stok_saat_ini: hppData.stok_saat_ini, // Ini adalah nilai stok total
             };
-            
+
         } else {
             tableName = 'transaksi_belanja';
             // Masukkan data ke transaksi_belanja (kolom stok di-NULL-kan)
@@ -141,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 satuan_beli: formData.satuan_beli,
                 harga_total: formData.harga_total,
                 hpp_per_satuan_awal: hppData.hpp_per_satuan_awal,
-                
+
                 // Kolom Opsional/Final (Bisa NULL)
                 satuan_stok: hppData.satuan_stok,
                 faktor_konversi: hppData.faktor_konversi,
