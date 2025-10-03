@@ -10,56 +10,58 @@ const KONVERSI_STANDAR = {
 };
 
 // Fungsi Utama untuk Menghitung HPP
+// assets/js/form.js - Ganti fungsi hitungHPP ini
+
 function hitungHPP(jumlahBeli, hargaTotal, satuanStok, faktorKonversi) {
     const data = {};
+    let hppAwal = 0;
     
     // Perbaikan 1: Pastikan HPP Satuan Awal aman dari pembagian nol
     if (jumlahBeli > 0 && hargaTotal >= 0) {
-        data.hpp_per_satuan_awal = hargaTotal / jumlahBeli;
-    } else {
-        // Mengembalikan 0 jika input tidak valid (untuk memuaskan NOT NULL constraint)
-        data.hpp_per_satuan_awal = 0; 
-    }
+        hppAwal = hargaTotal / jumlahBeli;
+    } 
+    data.hpp_per_satuan_awal = hppAwal; // Selalu berupa angka, tidak pernah null
 
     // 2. Cek apakah ada konversi (Satuan Kedua diisi)
     if (satuanStok) {
-        // 2a. Tentukan Faktor Konversi Final (menggunakan input user atau default)
+        // ... (Logika penentuan finalFaktorKonversi tetap sama) ...
+        
         let finalFaktorKonversi = faktorKonversi;
         if (!finalFaktorKonversi) {
-            // Coba ambil dari kamus standar jika input kosong
             const konversiKey = `${document.getElementById('satuanBeli').value}_${satuanStok}`;
             finalFaktorKonversi = KONVERSI_STANDAR[konversiKey];
 
             if (!finalFaktorKonversi) {
-                // Jika tidak ada faktor dan user tidak mengisi, ini adalah error fatal
-                return { error: 'Konversi tidak valid. Faktor konversi harus diisi manual atau definisikan faktor default.' };
+                return { error: 'Konversi tidak valid. Faktor konversi harus diisi manual.' };
             }
         }
 
         // 2b. Hitung HPP Final
-        // HPP Final hanya dihitung jika HPP Satuan Awal > 0
-        if (data.hpp_per_satuan_awal > 0) {
-            data.harga_pokok_final = data.hpp_per_satuan_awal / finalFaktorKonversi;
-        } else {
-            data.harga_pokok_final = 0;
-        }
+        data.harga_pokok_final = (hppAwal > 0) ? (hppAwal / finalFaktorKonversi) : 0;
 
         // 2c. Hitung Stok Akhir
         data.stok_saat_ini = jumlahBeli * finalFaktorKonversi;
-        data.faktor_konversi = finalFaktorKonversi; // Simpan faktor yang digunakan
+        data.faktor_konversi = finalFaktorKonversi;
 
     } else {
-        // Jika tidak ada konversi (Satuan Stok kosong)
-        data.harga_pokok_final = null; 
+        // Jika tidak ada konversi (Overhead/Bumbu)
+        data.harga_pokok_final = null; // Ini tetap NULL untuk overhead
         data.faktor_konversi = null;
-        data.stok_saat_ini = jumlahBeli; // Stok adalah jumlah beli
+        data.stok_saat_ini = jumlahBeli; 
     }
 
-    // Pembulatan dan validasi terakhir (memastikan tidak ada NaN)
-    data.hpp_per_satuan_awal = isNaN(data.hpp_per_satuan_awal) ? 0 : parseFloat(data.hpp_per_satuan_awal.toFixed(4));
-    data.harga_pokok_final = isNaN(data.harga_pokok_final) ? null : parseFloat(data.harga_pokok_final.toFixed(4));
-    data.stok_saat_ini = isNaN(data.stok_saat_ini) ? 0 : parseFloat(data.stok_saat_ini.toFixed(4));
-
+    // Perbaikan 2: Pembulatan dengan pengecekan isNaN
+    // hpp_per_satuan_awal: Dijamin angka, jadi toFixed aman.
+    data.hpp_per_satuan_awal = parseFloat(data.hpp_per_satuan_awal.toFixed(4));
+    
+    // harga_pokok_final: Cek apakah NULL sebelum mencoba toFixed
+    if (data.harga_pokok_final !== null) {
+        data.harga_pokok_final = parseFloat(data.harga_pokok_final.toFixed(4));
+    }
+    
+    // stok_saat_ini: Dijamin angka.
+    data.stok_saat_ini = parseFloat(data.stok_saat_ini.toFixed(4));
+    
     return { data };
 }
 
