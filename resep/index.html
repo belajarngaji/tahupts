@@ -15,17 +15,18 @@
     <div class="container">
         <form id="formResepAkhir">
             
-            <label for="produkAkhirSelect">Pilih Produk Akhir:</label>
-            <select id="produkAkhirSelect" required>
-                <option value="">-- Pilih atau Tambah Produk --</option>
-                </select>
+            <label for="namaProdukAkhir">Pilih/Ketik Produk Akhir:</label>
+            <input type="text" id="namaProdukAkhir" name="namaProdukAkhir" list="produkAkhirList" required>
+            <datalist id="produkAkhirList"></datalist>
+
+            <input type="hidden" id="produkAkhirIdHidden">
             
             <hr>
             <h3>Detail Produk & Pricing</h3>
             <div class="input-group">
                 <div>
                     <label for="satuanJual">Satuan Jual (Porsi/Kotak):</label>
-                    <input type="text" id="satuanJual" readonly>
+                    <input type="text" id="satuanJual" required>
                 </div>
                 <div>
                     <label for="hargaJualDefault">Harga Jual Default:</label>
@@ -51,12 +52,7 @@
         </form>
         <p id="message"></p>
 
-        <hr>
-        <h4>Kelola Produk Akhir</h4>
-        <div id="tambahProdukAkhir">
-            </div>
-
-    </div>
+        </div>
     <script type="module" src="/tahupts/assets/js/admin_resep_akhir.js"></script> 
 </body>
 </html>
