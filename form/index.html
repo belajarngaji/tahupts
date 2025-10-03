@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Belanja - Tahu Petis</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css"> 
+</head>
+<body>
+
+    <header>
+        <h1>Catat Belanja Bahan</h1>
+    </header>
+
+    <div class="container">
+        <form id="formBelanja">
+            
+            <label for="tanggal">Tanggal Pembelian:</label>
+            <input type="date" id="tanggal" name="tanggal" required>
+
+            <label for="namaItem">Nama Item:</label>
+            <input type="text" id="namaItem" name="namaItem" placeholder="Contoh: Tahu Kotak Besar, Gas LPG 3kg" required>
+
+            <label for="kategori">Kategori:</label>
+            <select id="kategori" name="kategori" required>
+                <option value="">-- Pilih Kategori --</option>
+                <option value="Bahan Baku Inti">Bahan Baku Inti (Tahu, Petis, Gula)</option>
+                <option value="Bumbu/Pelengkap">Bumbu/Pelengkap (Cabai, Minyak, Garam)</option>
+                <option value="Overhead/Operasional">Overhead/Operasional (Gas, Kemasan, Gaji)</option>
+            </select>
+
+            <div class="input-group">
+                <div style="flex: 2;">
+                    <label for="jumlahBeli">Jumlah:</label>
+                    <input type="number" id="jumlahBeli" name="jumlahBeli" step="any" required>
+                </div>
+                <div style="flex: 1;">
+                    <label for="satuanBeli">Satuan Awal:</label>
+                    <select id="satuanBeli" name="satuanBeli" required>
+                        <option value="">Satuan</option>
+                        <option value="pcs">pcs (Biji)</option>
+                        <option value="unit">unit</option>
+                        <option value="box">box</option>
+                        <option value="dus">dus</option>
+                        <option value="bungkus">bungkus</option>
+                        <option value="pack">pack</option>
+                        <option value="botol">botol</option>
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="ons">ons</option>
+                        <option value="L">L (Liter)</option>
+                        <option value="ml">ml</option>
+                        <option value="cup">cup</option>
+                        <option value="jam">jam</option>
+                    </select>
+                </div>
+            </div>
+
+            <label for="hargaTotal">Harga Total (Rp):</label>
+            <input type="number" id="hargaTotal" name="hargaTotal" required>
+
+            <hr> 
+            
+            <div id="konversiSection" style="display: none;">
+                <label>Opsi Konversi (Satuan Kedua/Stok):</label>
+                <div class="input-group">
+                    <div style="flex: 1;">
+                        <label for="satuanStok">Satuan Kedua:</label>
+                        <select id="satuanStok" name="satuanStok">
+                            <option value="">Satuan</option>
+                            <option value="pcs">pcs (Biji)</option>
+                            <option value="unit">unit</option>
+                            <option value="potong">potong</option>
+                            <option value="kg">kg</option>
+                            <option value="g">g</option>
+                            <option value="ons">ons</option>
+                            <option value="L">L (Liter)</option>
+                            <option value="ml">ml</option>
+                        </select>
+                    </div>
+                    <div style="flex: 2;">
+                        <label for="faktorKonversi">Faktor Konversi (1 Satuan Awal = ... Satuan Kedua):</label>
+                        <input type="number" id="faktorKonversi" name="faktorKonversi" step="any" placeholder="Cth: 60 (jika 1 kotak = 60 biji)">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit">SIMPAN</button>
+
+        </form>
+        <p id="message"></p>
+    </div>
+
+    <script type="module" src="/tahupts/assets/js/form.js"></script> 
+</body>
+</html>
