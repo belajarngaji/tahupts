@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produksi Saus Petis - Tahu Petis</title>
+    <link rel="stylesheet" href="assets/css/form.css"> 
+</head>
+<body>
+
+    <header>
+        <h1>Catat Produksi Saus Petis</h1>
+    </header>
+
+    <div class="container">
+        <form id="formProduksi">
+            
+            <label for="tanggalProduksi">Tanggal Produksi:</label>
+            <input type="date" id="tanggalProduksi" name="tanggalProduksi" required>
+
+            <label for="namaProduk">Nama Produk Intermediet:</label>
+            <select id="namaProduk" name="namaProduk" required>
+                <option value="">-- Pilih Produk --</option>
+                </select>
+
+            <hr>
+            <h3>Volume Hasil Produksi (Stok Ditambahkan)</h3>
+
+            <div class="input-group">
+                <div style="flex: 2;">
+                    <label for="volumeHasil">Total Volume Hasil Jadi:</label>
+                    <input type="number" id="volumeHasil" name="volumeHasil" step="any" required>
+                </div>
+                <div style="flex: 1;">
+                    <label for="satuanHasil">Satuan Stok:</label>
+                    <input type="text" id="satuanHasil" name="satuanHasil" readonly value="ml">
+                </div>
+            </div>
+            
+            <hr>
+            <h3>Bahan Baku yang Digunakan (Stok Dikurangi)</h3>
+            
+            <div id="resepInputs">
+                </div>
+            
+            <button type="button" id="tambahBahan">+ Tambah Bahan</button>
+            
+            <hr>
+            <button type="submit">PRODUKSI & HITUNG HPP</button>
+
+        </form>
+        <p id="message"></p>
+    </div>
+    <script type="module" src="/tahupts/assets/js/produksi.js"></script> 
+</body>
+</html>
