@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrasi Resep Produk Akhir</title>
+    <link rel="stylesheet" href="assets/css/form.css">
+</head>
+<body>
+
+    <header>
+        <h1>Administrasi Resep Produk Akhir</h1>
+    </header>
+
+    <div class="container">
+        <form id="formResepAkhir">
+            
+            <label for="produkAkhirSelect">Pilih Produk Akhir:</label>
+            <select id="produkAkhirSelect" required>
+                <option value="">-- Pilih atau Tambah Produk --</option>
+                </select>
+            
+            <hr>
+            <h3>Detail Produk & Pricing</h3>
+            <div class="input-group">
+                <div>
+                    <label for="satuanJual">Satuan Jual (Porsi/Kotak):</label>
+                    <input type="text" id="satuanJual" readonly>
+                </div>
+                <div>
+                    <label for="hargaJualDefault">Harga Jual Default:</label>
+                    <input type="number" id="hargaJualDefault" step="any" required>
+                </div>
+                <div>
+                    <label for="targetMargin">% Target Laba (Margin):</label>
+                    <input type="number" id="targetMargin" step="any" placeholder="Cth: 30 (untuk 30%)">
+                </div>
+            </div>
+
+            <hr>
+            <h3>Resep per 1 Unit Produk Akhir</h3>
+            
+            <div id="resepInputs">
+                </div>
+            
+            <button type="button" id="tambahBahan">➕ Tambah Bahan/Intermediet</button>
+            
+            <hr>
+            <button type="submit">SIMPAN RESEP & PRICING</button>
+
+        </form>
+        <p id="message"></p>
+
+        <hr>
+        <h4>Kelola Produk Akhir</h4>
+        <div id="tambahProdukAkhir">
+            </div>
+
+    </div>
+    <script type="module" src="/tahupts/assets/js/admin_resep_akhir.js"></script> 
+</body>
+</html>
