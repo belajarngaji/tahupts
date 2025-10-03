@@ -19,9 +19,14 @@
             <input type="date" id="tanggalProduksi" name="tanggalProduksi" required>
 
             <label for="namaProduk">Nama Produk Intermediet:</label>
-            <select id="namaProduk" name="namaProduk" required>
-                <option value="">-- Pilih Produk --</option>
-                </select>
+            <input type="text" id="namaProduk" name="namaProduk" list="produkList" required>
+
+            <datalist id="produkList"></datalist>
+
+            <input type="hidden" id="intermedietId" name="intermedietId">
+
+            <label for="satuanStok">Satuan Stok:</label>
+            <input type="text" id="satuanStok" name="satuanStok" required>
 
             <hr>
             <h3>Volume Hasil Produksi (Stok Ditambahkan)</h3>
