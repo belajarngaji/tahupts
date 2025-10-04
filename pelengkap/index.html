@@ -44,11 +44,11 @@
 
             <label for="namaPISelect">Nama Produk Intermediet (PI):</label>
             <div id="piSelectionContainer">
-                
+
                 <select id="namaPISelect" class="full-width" style="margin-bottom: 10px;">
                     <option value="">-- Pilih PI dari Katalog --</option>
                 </select>
-                
+
                 <button type="button" id="tombolPIBaru" class="secondary-button full-width" style="margin-bottom: 10px;">
                     + Tambah Produk Intermediet **BARU**
                 </button>
@@ -69,7 +69,7 @@
                     <input type="text" id="satuanUnit" required>
                 </div>
                 <div>
-                    <label for="hppDisplay">HPP Per Unit (Hasil Hitung Resep):</label>
+                    <label for="hppDisplay">Total Biaya Batch (Total HPP Bahan Baku):</label>
                     <input type="text" id="hppDisplay" readonly style="font-weight: bold; background-color: #f0f0f0;">
                 </div>
                 <div>
@@ -79,13 +79,24 @@
             </div>
 
             <hr>
-            <h3>Resep per 1 Unit Produk Intermediet (Hanya Bahan Baku Inti)</h3>
+            <h3>Resep per 1 Batch (Hanya Bahan Baku Inti)</h3>
             <div id="resepInputsPI">
                 </div>
 
             <button type="button" id="tambahBahanPI">➕ Tambah Bahan Baku Inti</button>
-            <p id="hppFeedback" style="margin-top: 15px; font-weight: bold;"></p>
+            
 
+            <hr>
+            <h3>Hasil Produksi Batch (Yield)</h3>
+            <p>Setelah bahan baku di resep ini selesai diolah (1 Batch), berapa unit kemasan (sachet, botol, dll.) yang Anda hasilkan?</p>
+
+            <label for="yieldQuantity">Jumlah Unit Kemasan Dihasilkan (Yield):</label>
+            <div class="input-group" style="align-items: center;">
+                <input type="number" id="yieldQuantity" step="1" placeholder="Cth: 50 (50 kemasan saus)" required>
+                <span id="yieldSatuanDisplay" style="font-weight: bold; margin-left: 10px;">(Satuan PI)</span>
+            </div>
+            
+            <p id="totalBatchCostFeedback" style="margin-top: 15px; font-weight: bold;">HPP per Unit akan dihitung setelah data Batch dan Yield diisi.</p>
             <hr>
             <button type="submit">SIMPAN RESEP & HPP</button>
 
