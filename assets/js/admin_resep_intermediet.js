@@ -1,19 +1,19 @@
-// assets/js/admin_resep_intermediet.js (Logika Batch/Yield)
+// assets/js/admin_resep_intermediet.js (Logika Batch/Yield Final)
 
 import { supabase } from './supabase.js';
 
 let masterData = {
     produkIntermediet: {},
     bahanBaku: [],
-    bahanBakuHpp: {}, // Master data HPP bahan baku
+    bahanBakuHpp: {},
 };
-let totalBatchCost = 0; // Menggantikan currentRecipeHPP
+let totalBatchCost = 0; 
 let currentRecipeItems = []; 
 let isNewPIIMode = false;
 
 // --- DEKLARASI GLOBAL UNTUK ELEMEN DOM ---
 let satuanUnitInput;
-let hppDisplay; // Sekarang akan menampilkan TOTAL BIAYA BATCH
+let hppDisplay; 
 let stokSaatIniDisplay;
 let namaPISelect;
 let tombolPIBaru;
@@ -25,13 +25,13 @@ let resepInputsPI;
 let tambahBahanPIBtn;
 let message;
 let formResep;
-let yieldQuantityInput; // Elemen baru
-let yieldSatuanDisplay; // Elemen baru
-let totalBatchCostFeedback; // Elemen baru
+let yieldQuantityInput; 
+let yieldSatuanDisplay; 
+let totalBatchCostFeedback; 
 // ------------------------------------------
 
 
-// --- FUNGSI HPP & RECIPE (Diubah menjadi Batch Cost) ---
+// --- FUNGSI HPP & RECIPE (Fokus pada Total Biaya Batch) ---
 
 const recalculateBatchCost = () => {
     totalBatchCost = 0;
@@ -53,10 +53,16 @@ const recalculateBatchCost = () => {
 
             if (item) {
                 // LOGIKA HPP BERDASARKAN SATUAN DIPAKAI (Hanya BBI)
-                if (satuanDipakai === item.satuan_utama) {
+                // HPP Unit yang disimpan di DB adalah HPP per satuan konversi (terkecil)
+                if (satuanDipakai === item.satuan_stok) {
+                    // Jika Satuan dipakek adalah satuan utama (e.g., Kg), gunakan HPP x Faktor Konversi (karena HPP di DB adalah per Gram)
                     itemHppUnit = item.hpp_per_unit * item.faktor_konversi; 
                 } else if (satuanDipakai === item.satuan_konversi) {
+                    // Jika Satuan dipakek adalah satuan konversi (e.g., Gram), gunakan HPP langsung
                     itemHppUnit = item.hpp_per_unit; 
+                } else {
+                    // Fallback to primary unit HPP if conversion not set
+                    itemHppUnit = item.hpp_per_unit * item.faktor_konversi; 
                 }
             }
 
@@ -74,17 +80,19 @@ const recalculateBatchCost = () => {
     const yieldQty = parseFloat(yieldQuantityInput.value) || 0;
     let hppPerUnit = 0;
     
+    // HITUNG HPP UNIT AKHIR BERDASARKAN YIELD
     if (yieldQty > 0) {
         hppPerUnit = totalBatchCost / yieldQty;
     }
 
+    // Update Display
     hppDisplay.value = totalBatchCost.toLocaleString('id-ID', { maximumFractionDigits: 0 });
     totalBatchCostFeedback.textContent = totalBatchCost > 0 && yieldQty > 0
         ? `Total Biaya Batch: Rp${totalBatchCost.toLocaleString('id-ID', { maximumFractionDigits: 0 })} | HPP per Unit Kemasan: Rp${hppPerUnit.toLocaleString('id-ID', { maximumFractionDigits: 2 })}`
         : 'HPP per Unit akan dihitung setelah total biaya dan jumlah hasil (Yield) diisi.';
 };
 
-// --- FUNGSI UTILITY BARIS RESEP (Tidak ada perubahan signifikan) ---
+// --- FUNGSI UTILITY BARIS RESEP ---
 
 const createItemSelect = (name, data) => {
     const select = document.createElement('select');
@@ -110,11 +118,11 @@ const tambahBarisResep = (resepData = {}) => {
     const itemSelect = createItemSelect('bahanBakuId', masterData.bahanBaku);
     itemSelectContainer.appendChild(itemSelect);
     
-    // 2. JUMLAH DIPAKAI (Jumlah Batch)
+    // 2. JUMLAH DIPAKAI (Jumlah Bulk/Batch)
     const jumlahInput = document.createElement('input');
     jumlahInput.type = 'number';
     jumlahInput.name = 'jumlahDipakai';
-    jumlahInput.placeholder = 'Jumlah per Batch';
+    jumlahInput.placeholder = 'Jumlah Bulk per Batch (Cth: 5.0)'; // Placeholder fokus pada Bulk
     jumlahInput.step = 'any';
     jumlahInput.value = resepData.jumlah_dipakai || '';
     jumlahInput.required = true;
@@ -148,14 +156,14 @@ const tambahBarisResep = (resepData = {}) => {
             const hppItem = masterData.bahanBakuHpp[selectedItem.id];
             
             // Opsi 1: Satuan Utama (e.g., kg)
-            satuanSelect.add(new Option(`${hppItem.satuan_utama} (Stok Utama)`, hppItem.satuan_utama));
+            satuanSelect.add(new Option(`${hppItem.satuan_utama} (Satuan Beli)`, hppItem.satuan_utama));
 
             // Opsi 2: Satuan Konversi (e.g., gram)
             if (hppItem.satuan_konversi && hppItem.faktor_konversi > 1) {
-                satuanSelect.add(new Option(`${hppItem.satuan_konversi} (Unit Konversi)`, hppItem.satuan_konversi));
+                satuanSelect.add(new Option(`${hppItem.satuan_konversi} (Satuan Terkecil)`, hppItem.satuan_konversi));
             }
             
-            satuanSelect.value = resepData.satuan_dipakai || hppItem.satuan_konversi || hppItem.satuan_utama; 
+            satuanSelect.value = resepData.satuan_dipakai || hppItem.satuan_utama; // Default ke Satuan Utama/Beli
         }
         recalculateBatchCost(); 
     });
@@ -171,7 +179,7 @@ const tambahBarisResep = (resepData = {}) => {
     resepInputsPI.appendChild(div);
 };
 
-// --- FUNGSI MEMUAT DATA LAMA & MASTER DATA (Penyesuaian untuk Yield) ---
+// --- FUNGSI MEMUAT DATA LAMA & MASTER DATA ---
 
 const loadResep = async (piId) => {
     const { data: resep, error: resepError } = await supabase
@@ -179,7 +187,7 @@ const loadResep = async (piId) => {
         .select('bahan_baku_id, jumlah_dipakai, satuan_dipakai')
         .eq('produk_akhir_id', piId)
         .not('bahan_baku_id', 'is', null)
-        .limit(100); // Batas aman untuk resep
+        .limit(100); 
 
     if (resepError) {
         message.textContent = '❌ Gagal memuat resep PI lama.';
@@ -204,14 +212,15 @@ const loadMasterData = async () => {
     message.textContent = 'Memuat data master...';
 
     // 1. Ambil data PI dan BBI
-    // Tambahkan yield_qty_batch (Baru, perlu ditambahkan di DB)
+    // PASTIKAN KOLOM 'yield_qty_batch' SUDAH ADA DI TABEL 'produk_intermediet'
     const { data: piData, error: piError } = await supabase
         .from('produk_intermediet')
-        .select('*, hpp_per_unit, stok_saat_ini, yield_qty_batch') // yield_qty_batch (kolom baru yang perlu Anda buat)
+        .select('*, hpp_per_unit, stok_saat_ini, yield_qty_batch, satuan') 
         .order('nama_intermediet', { ascending: true });
         
     const { data: bb, error: bbError } = await supabase
         .from('bahan_baku_inti')
+        // Ambil satuan konversi dan faktor untuk perhitungan HPP akurat
         .select('id, nama_bahan, satuan_stok, harga_pokok_per_unit, satuan_konversi, faktor_konversi');
     
     if (piError || bbError) {
@@ -220,10 +229,11 @@ const loadMasterData = async () => {
         return;
     }
 
-    // 2. Mapping Data HPP BBI (Sama)
+    // 2. Mapping Data HPP BBI 
     masterData.bahanBakuHpp = {};
     bb.forEach(b => { 
         masterData.bahanBakuHpp[b.id] = { 
+            // harga_pokok_per_unit harusnya adalah HPP per satuan TERKECIL (satuan_konversi)
             hpp_per_unit: b.harga_pokok_per_unit || 0, 
             satuan_utama: b.satuan_stok,
             satuan_konversi: b.satuan_konversi,
@@ -233,7 +243,7 @@ const loadMasterData = async () => {
 
     masterData.bahanBaku = bb;
     
-    // 3. Isi Dropdown PI (Sama)
+    // 3. Isi Dropdown PI 
     namaPISelect.innerHTML = '<option value="">-- Pilih PI dari Katalog --</option>'; 
     masterData.produkIntermediet = {};
     piData.forEach(p => {
@@ -246,7 +256,7 @@ const loadMasterData = async () => {
     message.textContent = 'Data siap. Pilih PI atau tambahkan baru.';
 };
 
-// --- FUNGSI RESET & MODE TOGGLE (Penyesuaian untuk Yield) ---
+// --- FUNGSI RESET & MODE TOGGLE ---
 
 const resetFormMode = (newMode) => {
     isNewPIIMode = newMode;
@@ -263,11 +273,10 @@ const resetFormMode = (newMode) => {
 
     tambahBarisResep(); 
     
-    // Logic readOnly Satuan Unit: BISA DIEDIT jika newMode=true
     satuanUnitInput.readOnly = !newMode;
 
     if (newMode) {
-        message.textContent = 'Mode PI Baru: Tentukan nama, satuan, Yield, dan resep Batch.';
+        message.textContent = 'Mode PI Baru: Tentukan nama, satuan kemasan, Yield, dan resep Bulk.';
         namaPISelect.style.display = 'none';
         tombolPIBaru.style.display = 'none';
         piBaruInputArea.style.display = 'flex'; 
@@ -314,6 +323,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     tombolBatalBaru.addEventListener('click', () => resetFormMode(false));
     tambahBahanPIBtn.addEventListener('click', () => tambahBarisResep());
     yieldQuantityInput.addEventListener('input', recalculateBatchCost); // Listener Yield
+    satuanUnitInput.addEventListener('input', () => {
+        yieldSatuanDisplay.textContent = `(${satuanUnitInput.value || 'Satuan PI'})`;
+    });
     
     namaPISelect.addEventListener('change', async () => {
         const selectedId = namaPISelect.value;
@@ -339,14 +351,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         message.textContent = `PI Katalog: ${piInfo.nama_intermediet}. Resep Batch dimuat.`;
     });
 
-    // --- LOGIKA SUBMIT (Perubahan untuk Batch/Yield) ---
+    // --- LOGIKA SUBMIT (Finalisasi Batch/Yield) ---
     formResep.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // 1. Validasi Awal
         const yieldQuantity = parseFloat(yieldQuantityInput.value);
-        if (yieldQuantity <= 0) {
-            message.textContent = '❌ Jumlah Unit Dihasilkan (Yield) harus lebih dari nol.';
+        if (yieldQuantity <= 0 || isNaN(yieldQuantity)) {
+            message.textContent = '❌ Jumlah Unit Dihasilkan (Yield) harus berupa angka positif.';
             message.className = 'error';
             return;
         }
@@ -368,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (!namaPI || !satuanUnit) {
-             message.textContent = '❌ Nama dan Satuan PI tidak boleh kosong.';
+             message.textContent = '❌ Nama dan Satuan kemasan PI tidak boleh kosong.';
              message.className = 'error';
              return;
         }
@@ -388,6 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const HPP_UNIT_AKHIR = totalBatchCost / yieldQuantity; 
 
         let piId = piIdHidden.value;
+        
         // 2. PENANGANAN PI BARU
         if (isNewPIIMode) {
             message.textContent = `PI baru ditemukan: ${namaPI}. Membuat entri baru...`;
@@ -413,7 +426,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } 
 
         // 3. Update HPP PI Lama
-        if (piInfoLama) {
+        if (piInfoLama || !isNewPIIMode) {
             const { error: hppUpdateError } = await supabase
                 .from('produk_intermediet')
                 .update({
@@ -431,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
 
-        // 4. Hapus dan Simpan Resep Batch
+        // 4. Hapus dan Simpan Resep Batch (Resep disimpan sebagai resep BULK/BATCH)
         const { error: deleteError } = await supabase
             .from('resep_akhir')
             .delete()
@@ -443,12 +456,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Simpan resep Batch ke resep_akhir (tetap menggunakan PI ID sebagai FK produk_akhir_id)
         const resepBaru = currentRecipeItems.map(item => ({
             produk_akhir_id: piId, 
             bahan_baku_id: item.itemId, 
             produk_intermediet_id: null, 
-            jumlah_dipakai: item.jumlah, // Jumlah ini adalah jumlah per 1 batch
+            jumlah_dipakai: item.jumlah, // Jumlah ini adalah jumlah BULK per 1 batch
             satuan_dipakai: item.itemSatuan,
         }));
 
@@ -464,7 +476,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
-        message.textContent = `✅ Resep Batch dan HPP Unit berhasil diperbarui untuk PI: ${namaPI}. HPP Unit: Rp${HPP_UNIT_AKHIR.toFixed(2)}`;
+        message.textContent = `✅ Aturan Batch berhasil disimpan untuk PI: ${namaPI}. HPP Unit: Rp${HPP_UNIT_AKHIR.toFixed(2)}`;
         message.className = 'success';
 
         // Reset dan Inisialisasi Ulang
