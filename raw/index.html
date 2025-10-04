@@ -3,28 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Bahan Mentah (Stok Awal & Belanjaan)</title>
+    <title>Daftar Bahan Mentah & Stok</title>
     <link rel="stylesheet" href="/tahupts/assets/css/form.css"> 
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        /* CSS Baru untuk tampilan rapi */
+        .card-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
         }
-        th, td {
+        .item-card {
             border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
+            padding: 15px;
+            width: calc(50% - 10px); /* 2 kolom per baris */
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            background-color: #fff;
         }
-        th {
-            background-color: #f4f4f4;
+        .item-card h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
         }
-        .numeric-col {
-            text-align: right;
-        }
-        .stock-col {
+        .stock-info {
+            font-size: 1.1em;
             font-weight: bold;
-            color: #17a2b8; /* Warna biru untuk Stok */
+            color: #007bff; /* Warna biru untuk Stok */
+            margin: 5px 0;
+        }
+        .conversion-alert {
+            font-size: 0.9em;
+            color: #dc3545; /* Warna merah untuk Alert */
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .conversion-alert strong {
+            font-weight: normal;
+        }
+        .section-separator {
+            margin-top: 40px;
+            border-top: 3px double #ccc;
+            padding-top: 10px;
         }
         .loading-message {
             text-align: center;
@@ -37,29 +56,23 @@
 
     <header>
         <h1>Daftar Bahan Mentah & Status Stok</h1>
-        <p>Tabel ini menampilkan semua Bahan Baku Inti (Bahan Mentah) dan jumlah Stok Terakhirnya.</p>
+        <p>Ringkasan stok bahan baku dan bahan belanja dengan detail konversi unit.</p>
     </header>
 
     <div class="container">
         <p id="message" class="loading-message">Memuat data...</p>
         
-        <h2>Bahan Baku Mentah & Stok</h2>
-        <div id="bahanBakuTableContainer">
-            <table id="bahanBakuTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nama Bahan Mentah</th>
-                        <th>Satuan Stok</th>
-                        <th class="numeric-col">HPP per Unit Terakhir</th>
-                        <th class="numeric-col stock-col">Stok Saat Ini</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
+        <div id="bahanBakuSection">
+            <h2>Bahan Baku (Intermediet / Olahan Internal)</h2>
+            <div id="bahanBakuList" class="card-list">
+                </div>
         </div>
 
+        <div id="bahanBelanjaSection" class="section-separator">
+            <h2>Bahan Belanja (Mentah / Stok Langsung)</h2>
+            <div id="bahanBelanjaList" class="card-list">
+                </div>
+        </div>
     </div>
     
     <script type="module" src="/tahupts/assets/js/raw.js"></script> 
