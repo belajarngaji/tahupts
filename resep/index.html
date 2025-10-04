@@ -4,55 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administrasi Resep Produk Akhir</title>
-    <link rel="stylesheet" href="/tahupts/assets/css/form.css">
-    <style>
-        /* Gaya dasar untuk produkBaruInputArea agar tombol dan input sejajar */
-        #produkBaruInputArea {
-            display: flex;
-            gap: 10px; /* Jarak antar elemen */
-            align-items: center;
-        }
-        #produkBaruInputArea input {
-            flex-grow: 1;
-        }
-
-        /* --- PERBAIKAN CSS UNTUK BARIS RESEP DINAMIS --- */
-        .resep-row {
-            display: flex; /* Mengatur item dalam baris */
-            gap: 10px; /* Jarak antar kolom */
-            margin-bottom: 15px; /* Jarak antar baris resep */
-            align-items: flex-end; /* Memastikan semua input/select sejajar di bawah */
-            padding-bottom: 5px;
-            border-bottom: 1px dashed #eee;
-        }
-
-        /* Item Select Container (untuk Tipe Item & ID Item) diberi ruang lebih luas */
-        .resep-row > div:nth-child(2) { 
-            flex: 2; /* Beri ruang dua kali lipat untuk nama item */
-        }
-        
-        /* Satuan Dipakai dan Jumlah Dipakai mengambil porsi standar */
-        .resep-row > select,
-        .resep-row > input[type="number"] {
-            flex: 1; 
-        }
-
-        /* Tombol Hapus dikecilkan */
-        .resep-row .hapus-bahan {
-            flex: 0 0 70px; /* Lebar tetap untuk tombol hapus */
-        }
-
-        /* Pastikan semua select/input punya tampilan yang konsisten */
-        .resep-row select, 
-        .resep-row input[type="text"], 
-        .resep-row input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-    </style>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css">  
 </head>
 <body>
 
