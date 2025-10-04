@@ -4,17 +4,20 @@ import { supabase } from './supabase.js';
 
 // Fungsi untuk membuat elemen card bahan
 const createBahanCard = (item) => {
-    // Stok utama (berdasarkan jumlah beli, dihitung dari stok_saat_ini / faktor_konversi)
-    const stokUtama = item.stok_saat_ini / item.faktor_konversi; 
+    // Pastikan faktor konversi dan stok adalah angka
+    const faktorKonversi = parseFloat(item.faktor_konversi) || 1;
+    const stokSaatIni = parseFloat(item.stok_saat_ini) || 0;
+    
+    // Satuan Utama dan Satuan Konversi (LANGSUNG DARI DB)
     const satuanUtama = item.satuan_stok; 
+    const satuanKonversi = item.satuan_konversi; // <-- Menggunakan kolom baru dari DB
 
-    // Stok konversi (sudah ada di kolom stok_saat_ini)
-    const stokKonversi = item.stok_saat_ini;
-    const satuanKonversi = (item.faktor_konversi && item.faktor_konversi !== 1) ? "potong" : item.satuan_stok; // ASUMSI: Konversi Tahu adalah 'potong'
-
-    // Tentukan satuan konversi yang lebih deskriptif (misalnya: jika pcs=5, maka 5 adalah nilai konversi)
-    const deskripsiKonversi = (item.faktor_konversi && item.faktor_konversi !== 1) 
-        ? `${item.faktor_konversi} ${satuanKonversi}` // e.g., 5 potong
+    // Logika perhitungan Stok Utama (e.g., pcs)
+    const stokUtama = stokSaatIni / faktorKonversi; 
+    
+    // Deskripsi Konversi (e.g., 5 potong)
+    const deskripsiKonversi = (faktorKonversi > 1 && satuanKonversi) 
+        ? `${faktorKonversi.toLocaleString('id-ID', { maximumFractionDigits: 0 })} ${satuanKonversi}`
         : null;
 
     const card = document.createElement('div');
@@ -25,7 +28,7 @@ const createBahanCard = (item) => {
         <div class="stock-info">
             Stok: ${stokUtama.toLocaleString('id-ID', { maximumFractionDigits: 2 })} ${satuanUtama} 
             ${deskripsiKonversi ? 
-                `≈ ${stokKonversi.toLocaleString('id-ID', { maximumFractionDigits: 2 })} ${satuanKonversi}` 
+                `≈ ${stokSaatIni.toLocaleString('id-ID', { maximumFractionDigits: 0 })} ${satuanKonversi}` 
                 : ''}
         </div>
         ${deskripsiKonversi ? 
@@ -44,15 +47,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const message = document.getElementById('message');
     const bbList = document.getElementById('bahanBakuList');
     const blList = document.getElementById('bahanBelanjaList');
-    
-    // --- 1. Ambil data dari Bahan Baku Inti ---
+
     const loadBahanMentahData = async () => {
         message.textContent = 'Mengambil data Bahan Mentah dan Stok...';
-        
-        // Mengambil semua kolom yang relevan dari tabel yang lengkap
+
+        // --- 1. Ambil data dari Bahan Baku Inti ---
+        // MEMASTIKAN KOLOM 'kategori' dan 'satuan_konversi' diambil
         const { data: bbData, error: bbError } = await supabase
             .from('bahan_baku_inti')
-            .select('id, nama_bahan, satuan_stok, stok_saat_ini, faktor_konversi, hpp_per_satuan_awal, harga_pokok_per_unit'); 
+            .select('id, nama_bahan, satuan_stok, stok_saat_ini, faktor_konversi, harga_pokok_per_unit, kategori, satuan_konversi'); 
 
         if (bbError) {
             message.textContent = '❌ Gagal memuat data bahan mentah.';
@@ -67,10 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // --- 2. Proses dan Pisahkan Data ---
         bbData.forEach(item => {
-            // ASUMSI PEMISAHAN TAMPILAN: Pisahkan berdasarkan nama bahan secara sederhana.
-            // Anda harus mengganti logika ini dengan kolom kategori yang ada di tabel Anda.
-            // Contoh Logika Asumsi (Diganti jika Anda punya kolom Kategori):
-            const isBahanBaku = (item.nama_bahan.toLowerCase().includes('tahu') || item.nama_bahan.toLowerCase().includes('petis'));
+            
+            // Logika Pemisahan Tampilan: Menggunakan kolom 'kategori' dari DB
+            // Asumsi: 'Bahan Baku Inti' masuk ke bagian Bahan Baku
+            const isBahanBaku = (item.kategori === 'Bahan Baku Inti');
 
             const formattedItem = {
                 ...item,
@@ -86,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 bbList.appendChild(card);
                 countBaku++;
             } else {
+                // Semua kategori lain (Bumbu/Pelengkap, Overhead/Operasional) dianggap "Bahan Belanja"
                 blList.appendChild(card);
                 countBelanja++;
             }
@@ -94,11 +98,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // --- 3. Update Status Pesan ---
         if (bbData.length === 0) {
-            bbList.innerHTML = '<p>Tidak ada data Bahan Baku di database.</p>';
+            bbList.innerHTML = '<p>Tidak ada data Bahan Baku Inti di database.</p>';
             blList.innerHTML = '<p>Tidak ada data Bahan Belanja di database.</p>';
         }
         
-        message.textContent = `✅ Daftar bahan berhasil dimuat. Bahan Baku: ${countBaku}, Bahan Belanja: ${countBelanja}.`;
+        message.textContent = `✅ Daftar bahan berhasil dimuat. Bahan Baku Inti: ${countBaku}, Bahan Belanja/Lainnya: ${countBelanja}.`;
         message.classList.remove('loading-message');
     };
 
