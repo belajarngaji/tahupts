@@ -1,4 +1,5 @@
 // assets/js/form.js
+
 import { supabase } from './supabase.js';
 
 // Kamus Konversi Standar (untuk mengisi otomatis jika faktor_konversi kosong)
@@ -6,62 +7,55 @@ const KONVERSI_STANDAR = {
     "kg_g": 1000,
     "L_ml": 1000,
     "ons_g": 100
-    // Tambahkan konversi standar umum Anda di sini (misal: "box_pcs": 12)
+    // Tambahkan konversi standar umum Anda di sini
 };
 
 // Fungsi Utama untuk Menghitung HPP
-// assets/js/form.js - Ganti fungsi hitungHPP ini
-
-function hitungHPP(jumlahBeli, hargaTotal, satuanStok, faktorKonversi) {
+function hitungHPP(jumlahBeli, hargaTotal, satuanBeli, satuanStok, faktorKonversi) {
     const data = {};
     let hppAwal = 0;
-    
-    // Perbaikan 1: Pastikan HPP Satuan Awal aman dari pembagian nol
+
+    // 1. Hitung HPP Satuan Awal
     if (jumlahBeli > 0 && hargaTotal >= 0) {
         hppAwal = hargaTotal / jumlahBeli;
     } 
-    data.hpp_per_satuan_awal = hppAwal; // Selalu berupa angka, tidak pernah null
+    data.hpp_per_satuan_awal = hppAwal;
 
     // 2. Cek apakah ada konversi (Satuan Kedua diisi)
-    if (satuanStok) {
-        // ... (Logika penentuan finalFaktorKonversi tetap sama) ...
+    if (satuanStok) { // Jika Satuan Kedua diisi, maka ada konversi
         
         let finalFaktorKonversi = faktorKonversi;
         if (!finalFaktorKonversi) {
-            const konversiKey = `${document.getElementById('satuanBeli').value}_${satuanStok}`;
+            // Coba ambil dari konversi standar jika faktor kosong
+            const konversiKey = `${satuanBeli}_${satuanStok}`;
             finalFaktorKonversi = KONVERSI_STANDAR[konversiKey];
 
             if (!finalFaktorKonversi) {
-                return { error: 'Konversi tidak valid. Faktor konversi harus diisi manual.' };
+                return { error: 'Konversi tidak valid. Faktor konversi harus diisi manual atau tersedia di standar.' };
             }
         }
-
-        // 2b. Hitung HPP Final
+        
+        // 2b. Hitung HPP Final (HPP per Unit Konversi)
         data.harga_pokok_final = (hppAwal > 0) ? (hppAwal / finalFaktorKonversi) : 0;
 
         // 2c. Hitung Stok Akhir
         data.stok_saat_ini = jumlahBeli * finalFaktorKonversi;
         data.faktor_konversi = finalFaktorKonversi;
+        data.satuan_kedua = satuanStok; // <--- PENTING: Mengembalikan Satuan Kedua
 
     } else {
-        // Jika tidak ada konversi (Overhead/Bumbu)
-        data.harga_pokok_final = null; // Ini tetap NULL untuk overhead
-        data.faktor_konversi = null;
+        // Jika tidak ada konversi (HPP Final = HPP Awal)
+        data.harga_pokok_final = hppAwal; 
+        data.faktor_konversi = 1;
         data.stok_saat_ini = jumlahBeli; 
+        data.satuan_kedua = null; // Tidak ada satuan kedua
     }
 
-    // Perbaikan 2: Pembulatan dengan pengecekan isNaN
-    // hpp_per_satuan_awal: Dijamin angka, jadi toFixed aman.
+    // 3. Pembulatan dan Penyesuaian Tipe
     data.hpp_per_satuan_awal = parseFloat(data.hpp_per_satuan_awal.toFixed(4));
-    
-    // harga_pokok_final: Cek apakah NULL sebelum mencoba toFixed
-    if (data.harga_pokok_final !== null) {
-        data.harga_pokok_final = parseFloat(data.harga_pokok_final.toFixed(4));
-    }
-    
-    // stok_saat_ini: Dijamin angka.
+    data.harga_pokok_final = parseFloat(data.harga_pokok_final.toFixed(4));
     data.stok_saat_ini = parseFloat(data.stok_saat_ini.toFixed(4));
-    
+
     return { data };
 }
 
@@ -74,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- A. Logika Tampilan: Tampilkan/Sembunyikan Konversi ---
     const toggleKonversiSection = () => {
+        // Hanya tampilkan konversi jika kategori adalah Bahan Baku Inti
         konversiSection.style.display = (kategoriSelect.value === 'Bahan Baku Inti') ? 'block' : 'none';
     };
     kategoriSelect.addEventListener('change', toggleKonversiSection);
@@ -93,16 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
             jumlah_beli: parseFloat(document.getElementById('jumlahBeli').value),
             satuan_beli: document.getElementById('satuanBeli').value,
             harga_total: parseFloat(document.getElementById('hargaTotal').value),
-            satuan_stok: document.getElementById('satuanStok').value || null,
+            satuan_stok: document.getElementById('satuanStok').value || null, // Ini adalah SATUAN KEDUA
             faktor_konversi: parseFloat(document.getElementById('faktorKonversi').value) || null,
         };
 
-        // Perbaikan 3: Validasi Keras untuk mencegah input 0 atau kosong masuk ke perhitungan
+        // Validasi Keras
         if (!formData.tanggal || !formData.nama_item || !formData.kategori || 
             !formData.jumlah_beli || formData.jumlah_beli <= 0 || 
             !formData.satuan_beli || !formData.harga_total) 
         {
-            message.textContent = 'Pastikan Tanggal, Nama, Kategori, Jumlah Beli (>0), Satuan, dan Harga diisi.';
+            message.textContent = 'Pastikan semua kolom wajib (Tanggal, Nama, Kategori, Jumlah Beli, Satuan, Harga) diisi dengan benar.';
             message.className = 'error';
             return;
         }
@@ -111,12 +106,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data: hppData, error: hppError } = hitungHPP(
             formData.jumlah_beli,
             formData.harga_total,
+            formData.satuan_beli, // Tambah: Satuan beli untuk lookup konversi standar
             formData.satuan_stok,
             formData.faktor_konversi
         );
 
         if (hppError) {
-            message.textContent = `Error perhitungan: ${hppError}`;
+            message.textContent = `Error perhitungan: ${hppError.error}`;
             message.className = 'error';
             return;
         }
@@ -127,28 +123,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (formData.kategori === 'Bahan Baku Inti') {
             tableName = 'bahan_baku_inti';
-            // Masukkan semua data ke bahan_baku_inti (semua kolom terisi)
+            
             dataToInsert = {
-                // Perbaikan 4: Nama kolom yang sesuai dengan skema DB
-                tanggal_pembelian: formData.tanggal, // Sesuai dengan skema DB
+                tanggal_pembelian: formData.tanggal, 
                 nama_bahan: formData.nama_item,
                 kategori: formData.kategori,
+                
+                // Data Pembelian Asli
                 jumlah_beli: formData.jumlah_beli,
                 satuan_beli: formData.satuan_beli,
                 harga_total: formData.harga_total,
-                satuan_stok: hppData.satuan_stok || formData.satuan_beli,
-                faktor_konversi: hppData.faktor_konversi || 1, 
                 hpp_per_satuan_awal: hppData.hpp_per_satuan_awal,
+
+                // Data HPP dan Stok (KONVERSI)
+                harga_pokok_per_unit: hppData.harga_pokok_final, // HPP per unit konversi/final
                 
-                // Perbaikan 5: Menggunakan 'harga_pokok_per_unit'
-                harga_pokok_per_unit: hppData.harga_pokok_final || hppData.hpp_per_satuan_awal, 
+                // SATUAN UTAMA (Satuan Beli)
+                satuan_stok: formData.satuan_beli, 
+
+                // SATUAN KONVERSI (Satuan Kedua) <-- MENYIMPAN KE KOLOM BARU DI DB
+                satuan_konversi: hppData.satuan_kedua || null, 
+
+                // FAKTOR KONVERSI & STOK AKHIR
+                faktor_konversi: hppData.faktor_konversi || 1, 
+                stok_saat_ini: hppData.stok_saat_ini, // Stok total dalam satuan konversi
                 
-                stok_saat_ini: hppData.stok_saat_ini, // Ini adalah nilai stok total
+                // Batas minimum tidak diinput di form ini, bisa diisi NULL atau default 0
+                batas_minimum: 0 
             };
 
         } else {
-            tableName = 'transaksi_belanja';
-            // Masukkan data ke transaksi_belanja (kolom stok di-NULL-kan)
+            // Jika bukan Bahan Baku Inti, simpan ke Transaksi Belanja
+            tableName = 'transaksi_belanja'; // Asumsi tabel untuk Bumbu/Overhead
+            
             dataToInsert = {
                 tanggal: formData.tanggal,
                 nama_item: formData.nama_item,
@@ -157,12 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 satuan_beli: formData.satuan_beli,
                 harga_total: formData.harga_total,
                 hpp_per_satuan_awal: hppData.hpp_per_satuan_awal,
-
-                // Kolom Opsional/Final (Bisa NULL)
-                satuan_stok: hppData.satuan_stok,
-                faktor_konversi: hppData.faktor_konversi,
-                harga_pokok_final: hppData.harga_pokok_final,
-                stok_saat_ini: null, // Kolom placeholder diabaikan
             };
         }
 
@@ -172,12 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .insert([dataToInsert]);
 
         if (error) {
-            message.textContent = `Gagal menyimpan transaksi ke ${tableName}: ${error.message}`;
+            message.textContent = `❌ Gagal menyimpan transaksi ke ${tableName}: ${error.message}`;
             message.className = 'error';
         } else {
             message.textContent = `✅ Transaksi berhasil disimpan ke tabel ${tableName}!`;
             message.className = 'success';
-            formBelanja.reset(); // Kosongkan formulir setelah sukses
+            formBelanja.reset(); 
             toggleKonversiSection(); // Atur ulang tampilan
         }
     });
