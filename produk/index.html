@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Produk Akhir (HPP)</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css"> 
+    <style>
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .product-table th, .product-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .product-table th {
+            background-color: #f2f2f2;
+        }
+        .product-table tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        .hpp-low { color: green; font-weight: bold; }
+        .hpp-high { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Katalog Produk Akhir (HPP Terkini)</h1>
+    </header>
+
+    <div class="container">
+        <p id="message">Memuat data produk...</p>
+
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th>Nama Produk</th>
+                    <th>Satuan Jual</th>
+                    <th>HPP Per Unit</th>
+                    <th>Harga Jual Default</th>
+                    <th>Margin Target (%)</th>
+                    <th>Status Margin</th>
+                </tr>
+            </thead>
+            <tbody id="productListBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script type="module" src="/tahupts/assets/js/produk_akhir_list.js"></script> 
+</body>
+</html>
