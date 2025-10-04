@@ -15,7 +15,7 @@
         #piBaruInputArea input {
             flex-grow: 1;
         }
-        /* Styling untuk baris resep, diwariskan dari admin_resep_akhir */
+        /* Styling untuk baris resep */
         .resep-row {
             display: flex;
             gap: 10px;
@@ -35,8 +35,8 @@
 <body>
 
     <header>
-        <h1>Administrasi Resep Produk Intermediet</h1>
-        <p>Definisikan resep dan HPP unit biaya untuk komponen seperti Saus Matang atau Bumbu Dasar.</p>
+        <h1>Administrasi Resep Produk Intermediet (PI)</h1>
+        <p>Tentukan resep *Batch* dan *Yield* untuk komponen seperti Saus Petis Matang.</p>
     </header>
 
     <div class="container">
@@ -65,11 +65,11 @@
             <h3>Detail Unit Produksi & HPP</h3>
             <div class="input-group">
                 <div>
-                    <label for="satuanUnit">Satuan Unit Produksi (Liter/Kg/Pcs):</label>
+                    <label for="satuanUnit">Satuan Unit Jual (Botol/Sachet/Pcs):</label>
                     <input type="text" id="satuanUnit" required>
                 </div>
                 <div>
-                    <label for="hppDisplay">Total Biaya Batch (Total HPP Bahan Baku):</label>
+                    <label for="hppDisplay">Total Biaya 1 Batch Masak (Otomatis):</label>
                     <input type="text" id="hppDisplay" readonly style="font-weight: bold; background-color: #f0f0f0;">
                 </div>
                 <div>
@@ -79,26 +79,26 @@
             </div>
 
             <hr>
-            <h3>Resep per 1 Batch (Hanya Bahan Baku Inti)</h3>
+            <h3>Resep per 1 Batch Masak (Fokus pada Bahan Utama)</h3>
             <div id="resepInputsPI">
                 </div>
 
-            <button type="button" id="tambahBahanPI">➕ Tambah Bahan Baku Inti</button>
+            <button type="button" id="tambahBahanPI">➕ Tambah Bahan Baku Inti (BBI)</button>
             
 
             <hr>
-            <h3>Hasil Produksi Batch (Yield)</h3>
-            <p>Setelah bahan baku di resep ini selesai diolah (1 Batch), berapa unit kemasan (sachet, botol, dll.) yang Anda hasilkan?</p>
+            <h3>Hasil Akhir Produksi (Yield)</h3>
+            <p>Setelah bahan baku di atas diolah (1 Batch), **berapa unit kemasan** yang Anda hasilkan?</p>
 
             <label for="yieldQuantity">Jumlah Unit Kemasan Dihasilkan (Yield):</label>
             <div class="input-group" style="align-items: center;">
-                <input type="number" id="yieldQuantity" step="1" placeholder="Cth: 50 (50 kemasan saus)" required>
+                <input type="number" id="yieldQuantity" step="1" placeholder="Cth: 200 (200 Botol)" required>
                 <span id="yieldSatuanDisplay" style="font-weight: bold; margin-left: 10px;">(Satuan PI)</span>
             </div>
             
-            <p id="totalBatchCostFeedback" style="margin-top: 15px; font-weight: bold;">HPP per Unit akan dihitung setelah data Batch dan Yield diisi.</p>
+            <p id="totalBatchCostFeedback" style="margin-top: 15px; font-weight: bold;"></p>
             <hr>
-            <button type="submit">SIMPAN RESEP & HPP</button>
+            <button type="submit">SIMPAN ATURAN BATCH & HPP</button>
 
         </form>
         <p id="message"></p>
