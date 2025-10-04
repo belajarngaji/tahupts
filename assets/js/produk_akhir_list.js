@@ -2,7 +2,7 @@
 
 import { supabase } from './supabase.js';
 
-const productListBody = document.getElementById('productListBody');
+const productCardContainer = document.getElementById('productCardContainer');
 const message = document.getElementById('message');
 
 const loadProductList = async () => {
@@ -16,67 +16,97 @@ const loadProductList = async () => {
 
     if (error) {
         message.textContent = `❌ Gagal memuat data: ${error.message}`;
-        productListBody.innerHTML = '<tr><td colspan="6">Error memuat data.</td></tr>';
+        productCardContainer.innerHTML = '<p>Error memuat data.</p>';
         console.error(error);
         return;
     }
 
     if (data.length === 0) {
         message.textContent = 'Tidak ada Produk Akhir yang terdaftar.';
-        productListBody.innerHTML = '<tr><td colspan="6">Tidak ada data produk.</td></tr>';
+        productCardContainer.innerHTML = '<p>Tidak ada data produk.</p>';
         return;
     }
 
-    productListBody.innerHTML = '';
+    productCardContainer.innerHTML = '';
     
     data.forEach(product => {
         const hpp = parseFloat(product.hpp_per_unit) || 0;
         const hargaJual = parseFloat(product.harga_jual_default) || 0;
         const marginTarget = parseFloat(product.target_margin) || 0;
         
+        const labaPerUnit = hargaJual - hpp;
+        const labaPerUnitFormatted = labaPerUnit.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        
         let actualMargin = 0;
-        let marginStatus = 'N/A';
-        let statusClass = '';
+        let marginStatusLabel = '';
+        let marginStatusClass = '';
+        let targetAchievedIcon = '';
 
         if (hargaJual > 0 && hpp > 0) {
-            actualMargin = ((hargaJual - hpp) / hargaJual) * 100;
+            actualMargin = (labaPerUnit / hargaJual) * 100;
             
-            if (hargaJual < hpp) {
-                marginStatus = 'RUGI';
-                statusClass = 'hpp-high';
+            if (labaPerUnit < 0) {
+                // RUGI
+                marginStatusLabel = 'RUGI';
+                marginStatusClass = 'status-loss';
+                targetAchievedIcon = `↓ -${Math.abs(actualMargin).toFixed(1)}%`;
             } else if (marginTarget > 0 && actualMargin < marginTarget) {
-                marginStatus = `Di bawah target ${marginTarget.toFixed(0)}%`;
-                statusClass = '';
+                // DI BAWAH TARGET
+                const marginDiff = marginTarget - actualMargin;
+                marginStatusLabel = 'Di Bawah Target';
+                marginStatusClass = 'status-neutral';
+                targetAchievedIcon = `↓ -${marginDiff.toFixed(1)}%`;
             } else {
-                marginStatus = `TARGET TERCAPAI (${actualMargin.toFixed(1)}%)`;
-                statusClass = 'hpp-low';
+                // TARGET TERCAPAI ATAU UNTUNG TANPA TARGET
+                marginStatusLabel = 'TARGET TERCAPAI';
+                marginStatusClass = 'status-ok';
+                targetAchievedIcon = actualMargin > 0 ? `↑ +${(actualMargin - marginTarget).toFixed(1)}%` : '~';
             }
         } else if (hpp > 0 && hargaJual === 0) {
-            marginStatus = 'BELUM ADA HARGA JUAL';
+            marginStatusLabel = 'Harga Jual Belum Diatur';
+            marginStatusClass = 'status-neutral';
+            targetAchievedIcon = 'N/A';
         }
 
+        // --- BUAT ELEMEN CARD ---
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        
+        card.innerHTML = `
+            <h2>${product.nama_produk}</h2>
+            <hr style="border: 0; border-top: 1px solid #ddd;">
 
-        const row = productListBody.insertRow();
-        
-        row.insertCell().textContent = product.nama_produk;
-        row.insertCell().textContent = product.satuan_jual;
-        
-        // HPP
-        row.insertCell().textContent = `Rp${hpp.toLocaleString('id-ID', { maximumFractionDigits: 2 })}`;
-        
-        // Harga Jual
-        row.insertCell().textContent = `Rp${hargaJual.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`;
-        
-        // Margin Target
-        row.insertCell().textContent = `${marginTarget.toFixed(0)}%`;
-        
-        // Status Margin
-        const statusCell = row.insertCell();
-        statusCell.textContent = marginStatus;
-        statusCell.className = statusClass;
+            <div class="product-info-group">
+                <span>Satuan Jual:</span>
+                <strong>${product.satuan_jual}</strong>
+            </div>
+
+            <div class="product-info-group">
+                <span>HPP:</span>
+                <strong>Rp${hpp.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</strong>
+            </div>
+
+            <div class="product-info-group">
+                <span>Harga Jual:</span>
+                <strong>Rp${hargaJual.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</strong>
+            </div>
+
+            <div class="product-info-group">
+                <span>Margin Target:</span>
+                <strong>${marginTarget.toFixed(0)}%</strong>
+            </div>
+            
+            <div class="margin-status-box ${marginStatusClass}">
+                <span class="status-main-label">${marginStatusLabel}</span>
+                <span>${labaPerUnit < 0 ? '-' : '+'}Rp${Math.abs(labaPerUnitFormatted)}</span>
+                <span>${targetAchievedIcon}</span>
+            </div>
+        `;
+
+        productCardContainer.appendChild(card);
     });
 
-    message.textContent = `✅ ${data.length} produk akhir berhasil dimuat.`;
+    message.textContent = `✅ ${data.length} produk akhir berhasil dimuat dalam format Katalog.`;
 };
 
 document.addEventListener('DOMContentLoaded', loadProductList);
