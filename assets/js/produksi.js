@@ -1,6 +1,6 @@
 // assets/js/produksi.js
 
-import { supabase } from './supabase.js';
+import { supabase } from './.js';
 
 let masterData = {
     produkIntermediet: [],
