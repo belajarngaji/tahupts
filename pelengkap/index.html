@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrasi Resep Produk Intermediet (HPP Biaya)</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css">
+    <style>
+        /* Gaya dasar untuk piBaruInputArea agar tombol dan input sejajar */
+        #piBaruInputArea {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #piBaruInputArea input {
+            flex-grow: 1;
+        }
+        /* Styling untuk baris resep, diwariskan dari admin_resep_akhir */
+        .resep-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #eee;
+        }
+        .resep-row > div:nth-child(2) {
+            flex: 2;
+        }
+        .resep-row .hapus-bahan {
+            flex: 0 0 70px; 
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Administrasi Resep Produk Intermediet</h1>
+        <p>Definisikan resep dan HPP unit biaya untuk komponen seperti Saus Matang atau Bumbu Dasar.</p>
+    </header>
+
+    <div class="container">
+        <form id="formResepIntermediet">
+
+            <label for="namaPISelect">Nama Produk Intermediet (PI):</label>
+            <div id="piSelectionContainer">
+                
+                <select id="namaPISelect" class="full-width" style="margin-bottom: 10px;">
+                    <option value="">-- Pilih PI dari Katalog --</option>
+                </select>
+                
+                <button type="button" id="tombolPIBaru" class="secondary-button full-width" style="margin-bottom: 10px;">
+                    + Tambah Produk Intermediet **BARU**
+                </button>
+
+                <div id="piBaruInputArea" style="display: none;">
+                    <input type="text" id="namaPIInputBaru" placeholder="Ketik Nama Produk Intermediet Baru" required>
+                    <button type="button" id="tombolBatalBaru" class="tertiary-button">Batal</button>
+                </div>
+            </div>
+
+            <input type="hidden" id="piIdHidden">
+
+            <hr>
+            <h3>Detail Unit Produksi & HPP</h3>
+            <div class="input-group">
+                <div>
+                    <label for="satuanUnit">Satuan Unit Produksi (Liter/Kg/Pcs):</label>
+                    <input type="text" id="satuanUnit" required>
+                </div>
+                <div>
+                    <label for="hppDisplay">HPP Per Unit (Hasil Hitung Resep):</label>
+                    <input type="text" id="hppDisplay" readonly style="font-weight: bold; background-color: #f0f0f0;">
+                </div>
+                <div>
+                    <label>Stok Saat Ini:</label>
+                    <input type="text" id="stokSaatIni" readonly>
+                </div>
+            </div>
+
+            <hr>
+            <h3>Resep per 1 Unit Produk Intermediet (Hanya Bahan Baku Inti)</h3>
+            <div id="resepInputsPI">
+                </div>
+
+            <button type="button" id="tambahBahanPI">➕ Tambah Bahan Baku Inti</button>
+            <p id="hppFeedback" style="margin-top: 15px; font-weight: bold;"></p>
+
+            <hr>
+            <button type="submit">SIMPAN RESEP & HPP</button>
+
+        </form>
+        <p id="message"></p>
+
+        </div>
+    <script type="module" src="/tahupts/assets/js/admin_resep_intermediet.js"></script> 
+</body>
+</html>
