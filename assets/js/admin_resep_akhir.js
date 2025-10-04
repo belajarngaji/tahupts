@@ -132,12 +132,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const produkAkhirIdHidden = document.getElementById('produkAkhirIdHidden');
     const resepInputs = document.getElementById('resepInputs');
     const tambahBahanBtn = document.getElementById('tambahBahan');
-    
+
     // PENTING: Inisialisasi variabel global
     satuanJualInput = document.getElementById('satuanJual');
     hargaJualInput = document.getElementById('hargaJualDefault');
     marginInput = document.getElementById('targetMargin');
-    
+
     const message = document.getElementById('message');
 
 
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         satuanJualInput.value = '';
         hargaJualInput.value = 0;
         marginInput.value = 0;
-        
+
         // Logic readOnly Satuan Jual: BISA DIEDIT jika newMode=true
         satuanJualInput.readOnly = !newMode; 
 
