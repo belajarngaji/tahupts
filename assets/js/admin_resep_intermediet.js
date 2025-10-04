@@ -1,4 +1,4 @@
-// assets/js/admin_resep_intermediet.js (Logika Batch/Yield Final)
+// assets/js/admin_resep_intermediet.js (Versi Perbaikan Final)
 
 import { supabase } from './supabase.js';
 
@@ -54,14 +54,13 @@ const recalculateBatchCost = () => {
             if (item) {
                 // LOGIKA HPP BERDASARKAN SATUAN DIPAKAI (Hanya BBI)
                 // HPP Unit yang disimpan di DB adalah HPP per satuan konversi (terkecil)
-                if (satuanDipakai === item.satuan_stok) {
-                    // Jika Satuan dipakek adalah satuan utama (e.g., Kg), gunakan HPP x Faktor Konversi (karena HPP di DB adalah per Gram)
+                if (satuanDipakai === item.satuan_utama) {
+                    // Jika Satuan dipakek adalah satuan utama (e.g., Kg)
                     itemHppUnit = item.hpp_per_unit * item.faktor_konversi; 
                 } else if (satuanDipakai === item.satuan_konversi) {
-                    // Jika Satuan dipakek adalah satuan konversi (e.g., Gram), gunakan HPP langsung
+                    // Jika Satuan dipakek adalah satuan konversi (e.g., Gram)
                     itemHppUnit = item.hpp_per_unit; 
                 } else {
-                    // Fallback to primary unit HPP if conversion not set
                     itemHppUnit = item.hpp_per_unit * item.faktor_konversi; 
                 }
             }
@@ -88,7 +87,7 @@ const recalculateBatchCost = () => {
     // Update Display
     hppDisplay.value = totalBatchCost.toLocaleString('id-ID', { maximumFractionDigits: 0 });
     totalBatchCostFeedback.textContent = totalBatchCost > 0 && yieldQty > 0
-        ? `Total Biaya Batch: Rp${totalBatchCost.toLocaleString('id-ID', { maximumFractionDigits: 0 })} | HPP per Unit Kemasan: Rp${hppPerUnit.toLocaleString('id-ID', { maximumFractionDigits: 2 })}`
+        ? `Total Biaya 1 Batch: Rp${totalBatchCost.toLocaleString('id-ID', { maximumFractionDigits: 0 })} | HPP per Unit Kemasan: Rp${hppPerUnit.toLocaleString('id-ID', { maximumFractionDigits: 2 })}`
         : 'HPP per Unit akan dihitung setelah total biaya dan jumlah hasil (Yield) diisi.';
 };
 
@@ -99,9 +98,17 @@ const createItemSelect = (name, data) => {
     select.name = name;
     select.required = true;
     select.innerHTML = `<option value="">-- Pilih Bahan Baku Inti --</option>`;
-    data.forEach(item => {
-        select.appendChild(new Option(`${item.nama_bahan} (${item.satuan_stok})`, item.id));
-    });
+    
+    // PENTING: PENANGANAN JIKA DATA BBI KOSONG
+    if (data && data.length > 0) {
+        data.forEach(item => {
+            select.appendChild(new Option(`${item.nama_bahan} (${item.satuan_stok})`, item.id));
+        });
+    } else {
+         // Tambahkan opsi jika data kosong untuk memberi tahu user
+         select.add(new Option('!!! TIDAK ADA BAHAN BAKU TERDAFTAR !!!', ''));
+    }
+
     select.addEventListener('change', recalculateBatchCost);
     return select;
 };
@@ -115,6 +122,7 @@ const tambahBarisResep = (resepData = {}) => {
     itemSelectContainer.style.flex = '3';
     div.appendChild(itemSelectContainer);
     
+    // Gunakan masterData.bahanBaku yang sudah dimuat
     const itemSelect = createItemSelect('bahanBakuId', masterData.bahanBaku);
     itemSelectContainer.appendChild(itemSelect);
     
@@ -122,7 +130,7 @@ const tambahBarisResep = (resepData = {}) => {
     const jumlahInput = document.createElement('input');
     jumlahInput.type = 'number';
     jumlahInput.name = 'jumlahDipakai';
-    jumlahInput.placeholder = 'Jumlah Bulk per Batch (Cth: 5.0)'; // Placeholder fokus pada Bulk
+    jumlahInput.placeholder = 'Jumlah Bulk per Batch (Cth: 5.0)'; 
     jumlahInput.step = 'any';
     jumlahInput.value = resepData.jumlah_dipakai || '';
     jumlahInput.required = true;
@@ -163,7 +171,9 @@ const tambahBarisResep = (resepData = {}) => {
                 satuanSelect.add(new Option(`${hppItem.satuan_konversi} (Satuan Terkecil)`, hppItem.satuan_konversi));
             }
             
-            satuanSelect.value = resepData.satuan_dipakai || hppItem.satuan_utama; // Default ke Satuan Utama/Beli
+            satuanSelect.value = resepData.satuan_dipakai || hppItem.satuan_utama; 
+        } else {
+            satuanSelect.add(new Option('-- Pilih Bahan Baku --', ''));
         }
         recalculateBatchCost(); 
     });
@@ -173,7 +183,12 @@ const tambahBarisResep = (resepData = {}) => {
         itemSelect.value = resepData.id;
         itemSelect.dispatchEvent(new Event('change')); 
     } else {
-        satuanSelect.add(new Option('-- Pilih Bahan Baku --', ''));
+        // Panggil change event secara paksa jika ada BBI agar satuan muncul di baris baru
+        if (masterData.bahanBaku.length > 0) {
+            itemSelect.dispatchEvent(new Event('change'));
+        } else {
+            satuanSelect.add(new Option('-- Pilih Bahan Baku --', ''));
+        }
     }
 
     resepInputsPI.appendChild(div);
@@ -212,7 +227,6 @@ const loadMasterData = async () => {
     message.textContent = 'Memuat data master...';
 
     // 1. Ambil data PI dan BBI
-    // PASTIKAN KOLOM 'yield_qty_batch' SUDAH ADA DI TABEL 'produk_intermediet'
     const { data: piData, error: piError } = await supabase
         .from('produk_intermediet')
         .select('*, hpp_per_unit, stok_saat_ini, yield_qty_batch, satuan') 
@@ -221,7 +235,8 @@ const loadMasterData = async () => {
     const { data: bb, error: bbError } = await supabase
         .from('bahan_baku_inti')
         // Ambil satuan konversi dan faktor untuk perhitungan HPP akurat
-        .select('id, nama_bahan, satuan_stok, harga_pokok_per_unit, satuan_konversi, faktor_konversi');
+        .select('id, nama_bahan, satuan_stok, harga_pokok_per_unit, satuan_konversi, faktor_konversi')
+        .order('nama_bahan', { ascending: true }); // Tambahkan sorting agar rapi
     
     if (piError || bbError) {
         message.textContent = '❌ Gagal memuat data master.';
@@ -229,11 +244,15 @@ const loadMasterData = async () => {
         return;
     }
 
+    // PENTING: CHECK JUMLAH DATA BBI
+    if (bb.length === 0) {
+        message.textContent = '⚠️ Tidak ada data Bahan Baku Inti ditemukan. Pastikan Anda sudah membuat entri di tabel bahan_baku_inti.';
+    }
+
     // 2. Mapping Data HPP BBI 
     masterData.bahanBakuHpp = {};
     bb.forEach(b => { 
         masterData.bahanBakuHpp[b.id] = { 
-            // harga_pokok_per_unit harusnya adalah HPP per satuan TERKECIL (satuan_konversi)
             hpp_per_unit: b.harga_pokok_per_unit || 0, 
             satuan_utama: b.satuan_stok,
             satuan_konversi: b.satuan_konversi,
@@ -410,8 +429,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .insert([{ 
                     nama_intermediet: namaPI, 
                     satuan: satuanUnit,
-                    hpp_per_unit: HPP_UNIT_AKHIR, // Simpan HPP Unit
-                    yield_qty_batch: yieldQuantity, // Simpan Yield
+                    hpp_per_unit: HPP_UNIT_AKHIR, 
+                    yield_qty_batch: yieldQuantity, 
                     stok_saat_ini: 0 
                 }])
                 .select()
@@ -430,8 +449,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error: hppUpdateError } = await supabase
                 .from('produk_intermediet')
                 .update({
-                    hpp_per_unit: HPP_UNIT_AKHIR, // Simpan HPP Unit
-                    yield_qty_batch: yieldQuantity, // Simpan Yield
+                    hpp_per_unit: HPP_UNIT_AKHIR, 
+                    yield_qty_batch: yieldQuantity, 
                     satuan: satuanUnit
                 })
                 .eq('id', piId);
@@ -460,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             produk_akhir_id: piId, 
             bahan_baku_id: item.itemId, 
             produk_intermediet_id: null, 
-            jumlah_dipakai: item.jumlah, // Jumlah ini adalah jumlah BULK per 1 batch
+            jumlah_dipakai: item.jumlah, 
             satuan_dipakai: item.itemSatuan,
         }));
 
