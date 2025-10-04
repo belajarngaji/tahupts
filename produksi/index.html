@@ -3,59 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Produksi Saus Petis - Tahu Petis</title>
-    <link rel="stylesheet" href="/tahupts/assets/css/form.css"> 
+    <title>Pencatatan Produksi Produk Intermediet</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css">
 </head>
 <body>
 
     <header>
-        <h1>Catat Produksi Saus Petis</h1>
+        <h1>Pencatatan Produksi Produk Intermediet (PI)</h1>
+        <p>Gunakan halaman ini untuk mencatat batch produksi Saus Matang, Bumbu Dasar, atau PI lainnya yang mengurangi stok bahan baku mentah (BBI).</p>
     </header>
 
     <div class="container">
-        <form id="formProduksi">
-            
+        <form id="formProduksiIntermediet">
+
             <label for="tanggalProduksi">Tanggal Produksi:</label>
-            <input type="date" id="tanggalProduksi" name="tanggalProduksi" required>
+            <input type="date" id="tanggalProduksi" required value="<%= new Date().toISOString().substring(0, 10) %>">
 
-            <label for="namaProduk">Nama Produk Intermediet:</label>
-            <input type="text" id="namaProduk" name="namaProduk" list="produkList" required>
+            <label for="produkIntermedietSelect">Produk Intermediet yang Dibuat:</label>
+            <select id="produkIntermedietSelect" required>
+                <option value="">-- Pilih Produk Intermediet --</option>
+                </select>
 
-            <datalist id="produkList"></datalist>
-
-            <input type="hidden" id="intermedietId" name="intermedietId">
-
-            <label for="satuanStok">Satuan Stok:</label>
-            <input type="text" id="satuanStok" name="satuanStok" required>
-
-            <hr>
-            <h3>Volume Hasil Produksi (Stok Ditambahkan)</h3>
-
-            <div class="input-group">
-                <div style="flex: 2;">
-                    <label for="volumeHasil">Total Volume Hasil Jadi:</label>
-                    <input type="number" id="volumeHasil" name="volumeHasil" step="any" required>
-                </div>
-                <div style="flex: 1;">
-                    <label for="satuanHasil">Satuan Stok:</label>
-                    <input type="text" id="satuanHasil" name="satuanHasil" readonly value="ml">
-                </div>
+            <label for="jumlahProduksi">Jumlah Unit yang Diproduksi:</label>
+            <div class="input-group" style="align-items: center;">
+                <input type="number" id="jumlahProduksi" step="any" placeholder="Contoh: 5" required>
+                <span id="satuanProduksiDisplay" style="font-weight: bold; margin-left: 10px; width: 80px;">(Satuan)</span>
             </div>
+            <small>Resep yang digunakan akan dihitung otomatis per 1 unit PI yang Anda buat.</small>
             
+            <div id="hppInfo" style="margin-top: 15px;"></div>
+
             <hr>
-            <h3>Bahan Baku yang Digunakan (Stok Dikurangi)</h3>
-            
-            <div id="resepInputs">
-                </div>
-            
-            <button type="button" id="tambahBahan">+ Tambah Bahan</button>
-            
-            <hr>
-            <button type="submit">PRODUKSI & HITUNG HPP</button>
+            <button type="submit">CATAT PRODUKSI & KURANGI STOK BBI</button>
 
         </form>
-        <p id="message"></p>
+        <p id="message" style="margin-top: 20px;"></p>
+
     </div>
+
     <script type="module" src="/tahupts/assets/js/produksi.js"></script> 
 </body>
 </html>
