@@ -1,278 +1,212 @@
-// assets/js/produksi.js - Ganti seluruh isi file dengan kode ini
+// assets/js/produksi.js
 
 import { supabase } from './supabase.js';
 
-let bahanBakuStok = []; // Menyimpan daftar Bahan Baku Inti yang tersedia
-// Map untuk lookup cepat: {'Nama Produk Intermediet': {id: UUID, satuan: 'ml'}, ...}
-let produkIntermedietMaster = {}; 
+let masterData = {
+    produkIntermediet: [],
+    resepIntermediet: {}, // Menyimpan resep PI: {PI_ID: [{bahan_baku_id, jumlah_dipakai, satuan_dipakai}, ...]}
+};
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const formProduksi = document.getElementById('formProduksi');
-    // MENGGANTI PRODUK SELECT menjadi INPUT TEXT
-    const namaProdukInput = document.getElementById('namaProduk'); 
-    const datalist = document.getElementById('produkList');
-    const satuanStokInput = document.getElementById('satuanStok');
-    
-    const resepInputs = document.getElementById('resepInputs');
-    const tambahBahanBtn = document.getElementById('tambahBahan');
-    let bahanCounter = 0; 
-    
-    // 1. Ambil Data Master: Bahan Baku Inti dan Produk Intermediet
-    const loadMasterData = async () => {
-        // A. Ambil stok dan HPP bahan baku (Tahu, Petis, Gula)
-        const { data: bahan, error: bahanError } = await supabase
+const produkIntermedietSelect = document.getElementById('produkIntermedietSelect');
+const satuanProduksiDisplay = document.getElementById('satuanProduksiDisplay');
+const jumlahProduksiInput = document.getElementById('jumlahProduksi');
+const hppInfoDiv = document.getElementById('hppInfo');
+const message = document.getElementById('message');
+const formProduksi = document.getElementById('formProduksiIntermediet');
+
+// --- Fungsi Pengurangan Stok BBI (Mirip reduceBahanBakuStock dari admin_resep_akhir.js) ---
+// CATATAN: Fungsi ini HARUS mendapatkan data HPP Bahan Baku yang benar (hpp_per_unit, faktor_konversi, satuan konversi)
+const reduceBahanBakuStock = async (bahanBakuList) => {
+    let success = true;
+
+    for (const item of bahanBakuList) {
+        // 1. Ambil data HPP dan Konversi dari Bahan Baku Inti
+        const { data: itemData, error: hppError } = await supabase
             .from('bahan_baku_inti')
-            .select('id, nama_bahan, harga_pokok_per_unit, satuan_stok, stok_saat_ini');
+            .select('hpp_per_unit, satuan_konversi, faktor_konversi, satuan_stok, stok_saat_ini, jumlah_beli')
+            .eq('id', item.bahan_baku_id)
+            .single();
 
-        if (bahanError) {
-            console.error('Gagal memuat bahan baku:', bahanError);
-            return;
-        }
-        bahanBakuStok = bahan;
-
-        // B. Ambil daftar produk intermediet (Saus Petis) untuk datalist
-        const { data: produk, error: produkError } = await supabase
-            .from('produk_intermediet')
-            .select('id, nama_intermediet, satuan');
-
-        if (produkError) {
-            console.error('Gagal memuat produk intermediet:', produkError);
-            return;
+        if (hppError || !itemData) {
+            console.error(`Gagal ambil data BBI ID ${item.bahan_baku_id}:`, hppError?.message);
+            success = false;
+            continue;
         }
 
-        // Isi Datalist dan map master data
-        datalist.innerHTML = ''; 
-        produkIntermedietMaster = {}; // Reset map
-        produk.forEach(p => {
+        let jumlahReduksiKonversi = 0;
+        
+        // 2. Hitung jumlah reduksi dalam satuan konversi
+        if (item.satuan_dipakai === itemData.satuan_stok) {
+            // Jika satuan dipakai adalah Satuan Utama (Beli)
+            jumlahReduksiKonversi = item.jumlah_dipakai * itemData.faktor_konversi;
+        } else if (item.satuan_dipakai === itemData.satuan_konversi) {
+            // Jika satuan dipakai adalah Satuan Konversi (Unit Terkecil)
+            jumlahReduksiKonversi = item.jumlah_dipakai;
+        } else {
+            console.warn(`Satuan BBI tidak dikenali: ${item.satuan_dipakai} ID: ${item.bahan_baku_id}`);
+            success = false;
+            continue;
+        }
+        
+        // 3. Hitung Stok Baru
+        const newStokSaatIni = itemData.stok_saat_ini - jumlahReduksiKonversi;
+        const newJumlahBeli = newStokSaatIni / itemData.faktor_konversi; 
+
+        // 4. Update DB Bahan Baku Inti
+        const { error: updateError } = await supabase
+            .from('bahan_baku_inti')
+            .update({
+                stok_saat_ini: newStokSaatIni, // Stok Konversi
+                jumlah_beli: newJumlahBeli // Stok Utama
+            })
+            .eq('id', item.bahan_baku_id);
+
+        if (updateError) {
+            console.error(`❌ Gagal update stok BBI ID ${item.bahan_baku_id}:`, updateError?.message);
+            success = false;
+        }
+    }
+    return success;
+};
+
+// --- Fungsi Utama untuk Memuat Data ---
+const loadMasterData = async () => {
+    message.textContent = 'Memuat data Produk Intermediet dan Resep...';
+
+    // 1. Ambil semua Produk Intermediet (PI)
+    const { data: piData, error: piError } = await supabase
+        .from('produk_intermediet')
+        .select('id, nama_intermediet, satuan, hpp_per_unit, stok_saat_ini');
+    
+    // 2. Ambil Resep yang ditujukan untuk Produk Intermediet (Resep Akhir yang produk_akhir_id-nya adalah PI ID)
+    // Asumsi: Anda menggunakan tabel resep_akhir untuk menyimpan resep PI
+    const { data: resepData, error: resepError } = await supabase
+        .from('resep_akhir') 
+        .select('produk_akhir_id, bahan_baku_id, jumlah_dipakai, satuan_dipakai, produk_intermediet_id');
+    
+    if (piError || resepError) {
+        message.textContent = '❌ Gagal memuat data master.';
+        console.error(piError || resepError);
+        return;
+    }
+
+    masterData.produkIntermediet = piData;
+    masterData.resepIntermediet = {};
+    
+    // 3. Mapping Resep ke Produk Intermediet yang bersangkutan (PI)
+    piData.forEach(pi => {
+        // Cari resep yang produk_akhir_id-nya sama dengan id PI
+        const resepPI = resepData.filter(r => r.produk_akhir_id === pi.id);
+        
+        // Hanya simpan item yang merupakan Bahan Baku Inti (BBI)
+        masterData.resepIntermediet[pi.id] = resepPI.filter(r => r.bahan_baku_id);
+    });
+
+    // 4. Isi Dropdown
+    produkIntermedietSelect.innerHTML = '<option value="">-- Pilih Produk Intermediet --</option>';
+    piData.forEach(pi => {
+        if (masterData.resepIntermediet[pi.id] && masterData.resepIntermediet[pi.id].length > 0) {
+            // Hanya tampilkan PI yang sudah memiliki resep
             const option = document.createElement('option');
-            option.value = p.nama_intermediet; // Value adalah NAMA produk
-            datalist.appendChild(option);
-            
-            produkIntermedietMaster[p.nama_intermediet] = {
-                id: p.id,
-                satuan: p.satuan
-            };
-        });
-
-        // Panggil tambahBahan pertama kali
-        tambahBahan(); 
-    };
-    
-    // Listener untuk mengisi Satuan Stok (Hanya berfungsi jika produk lama dipilih)
-    namaProdukInput.addEventListener('input', () => {
-        const nama = namaProdukInput.value.trim();
-        const info = produkIntermedietMaster[nama];
-        
-        if (info) {
-            // Jika nama produk ditemukan di master, isi satuan dan set input jadi readonly
-            satuanStokInput.value = info.satuan;
-            satuanStokInput.readOnly = true; 
-        } else {
-            // Jika nama produk baru/belum selesai diketik, biarkan user mengisi satuan
-            satuanStokInput.value = '';
-            satuanStokInput.readOnly = false;
+            option.value = pi.id;
+            option.textContent = `${pi.nama_intermediet} (${pi.satuan})`;
+            produkIntermedietSelect.appendChild(option);
         }
     });
 
-    // 2. Fungsi untuk menambah baris input bahan (TETAP SAMA)
-    const tambahBahan = () => {
-        bahanCounter++;
+    message.textContent = 'Data siap. Pilih Produk Intermediet yang akan diproduksi.';
+};
 
-        const div = document.createElement('div');
-        div.className = 'input-group bahan-row';
-        div.dataset.id = bahanCounter;
-
-        div.innerHTML = `
-            <div style="flex: 2;">
-                <label>Bahan #${bahanCounter}:</label>
-                <select name="bahanId" required>
-                    <option value="">-- Pilih Bahan Baku --</option>
-                    ${bahanBakuStok.map(b => `<option value="${b.id}" data-satuan="${b.satuan_stok}">${b.nama_bahan} (${b.satuan_stok})</option>`).join('')}
-                </select>
-            </div>
-            <div style="flex: 1;">
-                <label>Jumlah:</label>
-                <input type="number" name="jumlahDigunakan" step="any" required>
-            </div>
-            <button type="button" class="hapus-bahan" style="width: auto; background-color: #dc3545; padding: 10px 5px; margin-top: 25px;">Hapus</button>
+// --- Listener untuk Update Satuan dan HPP ---
+produkIntermedietSelect.addEventListener('change', () => {
+    const selectedId = produkIntermedietSelect.value;
+    const pi = masterData.produkIntermediet.find(p => p.id === selectedId);
+    
+    if (pi) {
+        satuanProduksiDisplay.textContent = `(${pi.satuan})`;
+        hppInfoDiv.innerHTML = `
+            <p>HPP per unit (${pi.satuan}) adalah: <strong>Rp${(pi.hpp_per_unit || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</strong></p>
+            <p>Stok Saat Ini: <strong>${(pi.stok_saat_ini || 0).toFixed(2)} ${pi.satuan}</strong></p>
         `;
+    } else {
+        satuanProduksiDisplay.textContent = '(Satuan)';
+        hppInfoDiv.innerHTML = '';
+    }
+});
 
-        resepInputs.appendChild(div);
-    };
+// --- Listener Submit Form ---
+formProduksi.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    tambahBahanBtn.addEventListener('click', tambahBahan);
-
-    // Hapus baris bahan (TETAP SAMA)
-    resepInputs.addEventListener('click', (e) => {
-        if (e.target.classList.contains('hapus-bahan')) {
-            e.target.closest('.bahan-row').remove();
-        }
-    });
-
-    // 3. Logika Submit Produksi (Bagian Paling KRITIS)
-    formProduksi.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        message.textContent = 'Memproses produksi dan menghitung HPP...';
-        message.className = '';
-
-        const hasilProduksi = parseFloat(document.getElementById('volumeHasil').value);
-        const namaProduk = namaProdukInput.value.trim();
-        const satuanProduk = satuanStokInput.value.trim();
-        const resepData = [];
-        let totalBiayaBahan = 0;
-        let intermedietId = null;
-
-        // Validasi Awal
-        if (!hasilProduksi || hasilProduksi <= 0) {
-            message.textContent = 'Volume Hasil Jadi harus lebih dari 0.';
-            message.className = 'error';
-            return;
-        }
-        if (!namaProduk) {
-            message.textContent = 'Nama Produk Intermediet wajib diisi.';
-            message.className = 'error';
-            return;
-        }
-        if (!satuanProduk) {
-            message.textContent = 'Satuan Stok wajib diisi.';
-            message.className = 'error';
-            return;
-        }
-
-
-        // Ambil data bahan yang digunakan (TETAP SAMA)
-        document.querySelectorAll('.bahan-row').forEach(row => {
-            const bahanId = row.querySelector('select[name="bahanId"]').value;
-            const jumlahDigunakan = parseFloat(row.querySelector('input[name="jumlahDigunakan"]').value);
-
-            // ... (logika pengambilan resepData tetap sama) ...
-            if (bahanId && jumlahDigunakan > 0) {
-                const bahanInfo = bahanBakuStok.find(b => b.id === bahanId);
-                if (bahanInfo) {
-                    const biayaBahan = jumlahDigunakan * bahanInfo.harga_pokok_per_unit;
-                    totalBiayaBahan += biayaBahan;
-
-                    resepData.push({
-                        bahan_id: bahanId,
-                        jumlah_digunakan: jumlahDigunakan,
-                        hpp_per_unit: bahanInfo.harga_pokok_per_unit, 
-                        satuan_digunakan: bahanInfo.satuan_stok,
-                    });
-                }
-            }
-        });
-
-        if (resepData.length === 0) {
-            message.textContent = 'Mohon masukkan minimal satu bahan baku.';
-            message.className = 'error';
-            return;
-        }
-        
-        // 4. PENANGANAN PRODUK LAMA VS BARU (Logika Krusial)
-        let produkInfo = produkIntermedietMaster[namaProduk];
-        
-        if (!produkInfo) {
-            // --- SKENARIO 1: PRODUK BARU ---
-            message.textContent = `Produk baru: ${namaProduk}. Membuat entri baru di database...`;
-            const { data: newProduk, error: insertError } = await supabase
-                .from('produk_intermediet')
-                .insert([{
-                    nama_intermediet: namaProduk,
-                    satuan: satuanProduk,
-                    stok_saat_ini: 0,
-                    hpp_per_unit: 0
-                }])
-                .select()
-                .single();
-            
-            if (insertError) {
-                message.textContent = `❌ Gagal membuat produk baru: ${insertError.message}`;
-                message.className = 'error';
-                return;
-            }
-            intermedietId = newProduk.id;
-        } else {
-            // --- SKENARIO 2: PRODUK LAMA ---
-            intermedietId = produkInfo.id;
-        }
-        
-        // Cek ID Produk Intermediet
-        if (!intermedietId) {
-            message.textContent = 'ID Produk Intermediet tidak ditemukan setelah proses.';
-            message.className = 'error';
-            return;
-        }
-
-
-        // 5. Update Database (Mulai Transaksional)
-
-        // A. Perbarui Stok Bahan Baku Inti (TETAP SAMA)
-        const updatePromises = resepData.map(async item => {
-            const bahanInfo = bahanBakuStok.find(b => b.id === item.bahan_id);
-            const stokBaru = bahanInfo.stok_saat_ini - item.jumlah_digunakan;
-            
-            if (stokBaru < 0) {
-                // Ini adalah validasi: stok tidak boleh minus
-                throw new Error(`Stok ${bahanInfo.nama_bahan} tidak cukup! Tersisa: ${bahanInfo.stok_saat_ini}`);
-            }
-
-            return supabase
-                .from('bahan_baku_inti')
-                .update({ stok_saat_ini: stokBaru })
-                .eq('id', item.bahan_id);
-        });
-
-        try {
-            await Promise.all(updatePromises);
-
-            // B. Update Stok dan HPP Produk Intermediet
-            // Ambil data stok dan HPP lama (wajib dilakukan setelah memastikan produk sudah ada/baru dibuat)
-            const { data: oldProdukData, error: fetchError } = await supabase
-                .from('produk_intermediet')
-                .select('stok_saat_ini, hpp_per_unit')
-                .eq('id', intermedietId)
-                .single();
-
-            if (fetchError) throw new Error('Gagal mengambil data produk lama.');
-
-            const stokLama = oldProdukData.stok_saat_ini;
-            const hppLama = oldProdukData.hpp_per_unit;
-
-            // Hitung HPP Rata-Rata Baru (Average Cost Method)
-            const totalBiayaLama = stokLama * hppLama;
-            const totalBiayaBaru = totalBiayaLama + totalBiayaBahan;
-            const totalStokBaru = stokLama + hasilProduksi;
-            
-            // Pencegahan pembagian dengan nol
-            const hppRataRataBaru = totalStokBaru > 0 ? totalBiayaBaru / totalStokBaru : 0; 
-
-            // Kirim update
-            const { error: updateError } = await supabase
-                .from('produk_intermediet')
-                .update({ 
-                    stok_saat_ini: totalStokBaru, 
-                    hpp_per_unit: hppRataRataBaru 
-                })
-                .eq('id', intermedietId);
-
-            if (updateError) throw new Error('Gagal update stok produk intermediet.');
-
-            // C. Simpan Detail Resep Produksi (Untuk riwayat batch ini)
-            // *Opsional:* Anda bisa menyimpan detail resep ke tabel `resep_intermediet` di sini.
-            
-            message.textContent = `✅ Produksi ${namaProduk} berhasil! HPP/unit: Rp${hppRataRataBaru.toFixed(2)}/${satuanProduk}. Stok total: ${totalStokBaru.toFixed(2)} ${satuanProduk}.`;
-            message.className = 'success';
-            
-            formProduksi.reset();
-            satuanStokInput.readOnly = false; // Reset readonly status
-            await loadMasterData(); // Muat ulang data untuk menampilkan stok/datalist baru
-
-        } catch (error) {
-            message.textContent = `❌ Gagal Produksi: ${error.message}`;
-            message.className = 'error';
-        }
-    });
+    const piId = produkIntermedietSelect.value;
+    const jumlahProduksi = parseFloat(jumlahProduksiInput.value);
+    const tanggalProduksi = document.getElementById('tanggalProduksi').value;
     
-    // Inisialisasi: Muat data master saat halaman dimuat
+    if (!piId || jumlahProduksi <= 0) {
+        message.textContent = '❌ Harap lengkapi semua input dengan benar.';
+        message.className = 'error';
+        return;
+    }
+
+    const pi = masterData.produkIntermediet.find(p => p.id === piId);
+    const resep = masterData.resepIntermediet[piId];
+
+    if (!resep || resep.length === 0) {
+        message.textContent = `❌ Resep untuk ${pi.nama_intermediet} tidak ditemukan.`;
+        message.className = 'error';
+        return;
+    }
+
+    message.textContent = 'Memulai proses produksi dan pengurangan stok BBI...';
+    message.className = '';
+
+    // 1. Hitung total kebutuhan BBI berdasarkan Jumlah Produksi
+    const bahanBakuYangDikonsumsi = resep.map(item => ({
+        bahan_baku_id: item.bahan_baku_id,
+        jumlah_dipakai: item.jumlah_dipakai * jumlahProduksi,
+        satuan_dipakai: item.satuan_dipakai // Satuan yang digunakan di resep
+    }));
+
+    // 2. Kurangi Stok BBI
+    const reductionSuccess = await reduceBahanBakuStock(bahanBakuYangDikonsumsi);
+
+    if (!reductionSuccess) {
+        message.textContent = `⚠️ Gagal mengurangi sebagian stok Bahan Baku Inti. Produksi PI DIBATALKAN. Cek log konsol.`;
+        message.className = 'warning';
+        return;
+    }
+    
+    // 3. Ambil Stok PI Saat Ini
+    const { data: currentPI, error: fetchPIError } = await supabase
+        .from('produk_intermediet')
+        .select('stok_saat_ini')
+        .eq('id', piId)
+        .single();
+    
+    const newPIStock = (currentPI?.stok_saat_ini || 0) + jumlahProduksi;
+
+    // 4. Tambah Stok PI (Saus Matang)
+    const { error: updatePIError } = await supabase
+        .from('produk_intermediet')
+        .update({ stok_saat_ini: newPIStock })
+        .eq('id', piId);
+
+    if (updatePIError) {
+        message.textContent = `❌ Stok BBI berhasil dikurangi, tetapi GAGAL menambahkan stok PI. Cek log konsol.`;
+        message.className = 'warning';
+        return;
+    }
+
+    // 5. Catat Transaksi Produksi (Opsional tapi Direkomendasikan untuk Audit)
+    // Jika Anda ingin mencatat ini, buat tabel baru 'transaksi_produksi' dan insert log di sini.
+
+    message.textContent = `✅ Produksi ${jumlahProduksi} ${pi.satuan} ${pi.nama_intermediet} berhasil dicatat. Stok BBI dikurangi, Stok PI kini ${newPIStock.toFixed(2)} ${pi.satuan}.`;
+    message.className = 'success';
+
+    // Reset dan reload
+    formProduksi.reset();
     await loadMasterData();
 });
+
+
+document.addEventListener('DOMContentLoaded', loadMasterData);
