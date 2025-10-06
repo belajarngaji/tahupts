@@ -1,185 +1,152 @@
 // assets/js/form.js
 
-import { supabase } from './supabase.js';
+// assets/js/form.js
 
-// Kamus Konversi Standar (untuk mengisi otomatis jika faktor_konversi kosong)
-const KONVERSI_STANDAR = {
-    "kg_g": 1000,
-    "L_ml": 1000,
-    "ons_g": 100
-    // Tambahkan konversi standar umum Anda di sini
-};
+// 1. Integrasi Supabase Client (Pastikan path ke supabase.js benar)
+import { supabase } from "./supabase.js"; 
 
-// Fungsi Utama untuk Menghitung HPP
-// Sekarang menggunakan 'satuanKonversi' sebagai parameter yang jelas
-function hitungHPP(jumlahBeli, hargaTotal, satuanBeli, satuanKonversi, faktorKonversi) {
-    const data = {};
-    let hppAwal = 0;
+const TABLE_NAME = 'activity_log';
 
-    // 1. Hitung HPP Satuan Awal
-    if (jumlahBeli > 0 && hargaTotal >= 0) {
-        hppAwal = hargaTotal / jumlahBeli;
-    } 
-    data.hpp_per_satuan_awal = hppAwal;
+// ==============================================
+// FUNGSI UTILITY: PENGAMBIL DATA FORM
+// ==============================================
 
-    // 2. Cek apakah ada konversi
-    if (satuanKonversi) { // Jika Satuan Kedua/Konversi diisi
-        
-        let finalFaktorKonversi = faktorKonversi;
-        if (!finalFaktorKonversi) {
-            // Coba ambil dari konversi standar jika faktor kosong
-            const konversiKey = `${satuanBeli}_${satuanKonversi}`;
-            finalFaktorKonversi = KONVERSI_STANDAR[konversiKey];
-
-            if (!finalFaktorKonversi) {
-                return { error: 'Konversi tidak valid. Faktor konversi harus diisi manual atau tersedia di standar.' };
-            }
-        }
-        
-        // 2b. Hitung HPP Final (HPP per Unit Konversi)
-        data.harga_pokok_final = (hppAwal > 0) ? (hppAwal / finalFaktorKonversi) : 0;
-
-        // 2c. Hitung Stok Akhir
-        data.stok_saat_ini = jumlahBeli * finalFaktorKonversi;
-        data.faktor_konversi = finalFaktorKonversi;
-        data.satuan_kedua = satuanKonversi; // <--- Mengembalikan Satuan Konversi
-
-    } else {
-        // Jika tidak ada konversi (HPP Final = HPP Awal)
-        data.harga_pokok_final = hppAwal; 
-        data.faktor_konversi = 1;
-        data.stok_saat_ini = jumlahBeli; 
-        data.satuan_kedua = null; // Tidak ada satuan kedua
+// Fungsi untuk mendapatkan nilai dari input (termasuk radio button)
+function getInputValue(id, isRadio = false) {
+    if (isRadio) {
+        const radio = document.querySelector(`input[name="${id}"]:checked`);
+        return radio ? radio.value : null;
     }
-
-    // 3. Pembulatan dan Penyesuaian Tipe
-    data.hpp_per_satuan_awal = parseFloat(data.hpp_per_satuan_awal.toFixed(4));
-    data.harga_pokok_final = parseFloat(data.harga_pokok_final.toFixed(4));
-    data.stok_saat_ini = parseFloat(data.stok_saat_ini.toFixed(4));
-
-    return { data };
+    const element = document.getElementById(id);
+    // Pastikan string kosong (null) tidak dikirim jika input tidak diisi
+    return element && element.value !== '' ? element.value : null;
 }
 
+// ==============================================
+// FUNGSI 1: AUTOSUGGEST (Saran Otomatis)
+// ==============================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    const formBelanja = document.getElementById('formBelanja');
-    const kategoriSelect = document.getElementById('kategori');
-    const konversiSection = document.getElementById('konversiSection');
-    const message = document.getElementById('message');
+async function setupAutosuggest(inputId, columnName) {
+    const inputElement = document.getElementById(inputId);
+    if (!inputElement) return;
 
-    // --- A. Logika Tampilan: Tampilkan/Sembunyikan Konversi ---
-    const toggleKonversiSection = () => {
-        konversiSection.style.display = (kategoriSelect.value === 'Bahan Baku Inti') ? 'block' : 'none';
-    };
-    kategoriSelect.addEventListener('change', toggleKonversiSection);
-    toggleKonversiSection();
+    // Ambil data unik dari kolom yang diinginkan
+    const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select(columnName)
+        .limit(100); // Batasi hasil untuk efisiensi
 
-    // --- B. Logika Submit Form ---
-    formBelanja.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        message.textContent = 'Memproses data...';
-        message.className = '';
+    if (error) {
+        console.error(`Gagal memuat autosuggest untuk ${columnName}:`, error);
+        return;
+    }
 
-        // 1. Ambil Data Dasar dari Formulir
-        const formData = {
-            tanggal: document.getElementById('tanggal').value,
-            nama_item: document.getElementById('namaItem').value,
-            kategori: kategoriSelect.value,
-            jumlah_beli: parseFloat(document.getElementById('jumlahBeli').value),
-            satuan_beli: document.getElementById('satuanBeli').value,
-            harga_total: parseFloat(document.getElementById('hargaTotal').value),
-            // Mengambil nilai dari input id="satuanStok" dan dinamai lebih jelas
-            satuan_konversi_input: document.getElementById('satuanStok').value || null, 
-            faktor_konversi: parseFloat(document.getElementById('faktorKonversi').value) || null,
-        };
+    // Ekstrak nilai unik, filter yang kosong, dan urutkan
+    const historyData = [...new Set(data.map(item => item[columnName]).filter(Boolean))];
 
-        // Validasi Keras
-        if (!formData.tanggal || !formData.nama_item || !formData.kategori || 
-            !formData.jumlah_beli || formData.jumlah_beli <= 0 || 
-            !formData.satuan_beli || !formData.harga_total) 
-        {
-            message.textContent = 'Pastikan semua kolom wajib diisi dengan benar.';
-            message.className = 'error';
-            return;
-        }
+    // Buat/Ambil Elemen Datalist
+    const datalistId = `${inputId}-list`;
+    let datalist = document.getElementById(datalistId);
 
-        // 2. Jalankan Perhitungan HPP
-        const { data: hppData, error: hppError } = hitungHPP(
-            formData.jumlah_beli,
-            formData.harga_total,
-            formData.satuan_beli,
-            formData.satuan_konversi_input, // <-- Meneruskan Satuan Konversi Input
-            formData.faktor_konversi
-        );
-
-        if (hppError) {
-            message.textContent = `Error perhitungan: ${hppError.error}`;
-            message.className = 'error';
-            return;
-        }
-
-        // 3. Tentukan Tabel dan Objek Data Final
-        let tableName;
-        let dataToInsert = {};
-
-        if (formData.kategori === 'Bahan Baku Inti') {
-            tableName = 'bahan_baku_inti';
-            
-            dataToInsert = {
-                tanggal_pembelian: formData.tanggal, 
-                nama_bahan: formData.nama_item,
-                kategori: formData.kategori,
-                
-                // Data Pembelian Asli
-                jumlah_beli: formData.jumlah_beli,
-                satuan_beli: formData.satuan_beli,
-                harga_total: formData.harga_total,
-                hpp_per_satuan_awal: hppData.hpp_per_satuan_awal,
-
-                // Data HPP dan Stok (KONVERSI)
-                harga_pokok_per_unit: hppData.harga_pokok_final, // HPP per unit konversi/final
-                
-                // SATUAN UTAMA (Satuan Beli)
-                satuan_stok: formData.satuan_beli, 
-
-                // SATUAN KONVERSI (Satuan Kedua/Konversi)
-                satuan_konversi: hppData.satuan_kedua || null, // <--- JALUR YANG BENAR KE KOLOM BARU
-
-                // FAKTOR KONVERSI & STOK AKHIR
-                faktor_konversi: hppData.faktor_konversi || 1, 
-                stok_saat_ini: hppData.stok_saat_ini, // Stok total dalam satuan konversi
-                
-                batas_minimum: 0 
-            };
-
-        } else {
-            // Jika bukan Bahan Baku Inti, simpan ke Transaksi Belanja
-            tableName = 'transaksi_belanja';
-            
-            dataToInsert = {
-                tanggal: formData.tanggal,
-                nama_item: formData.nama_item,
-                kategori: formData.kategori,
-                jumlah_beli: formData.jumlah_beli,
-                satuan_beli: formData.satuan_beli,
-                harga_total: formData.harga_total,
-                hpp_per_satuan_awal: hppData.hpp_per_satuan_awal,
-            };
-        }
-
-        // 4. Kirim Data ke Supabase
-        const { error } = await supabase
-            .from(tableName)
-            .insert([dataToInsert]);
-
-        if (error) {
-            message.textContent = `❌ Gagal menyimpan transaksi ke ${tableName}: ${error.message}`;
-            message.className = 'error';
-        } else {
-            message.textContent = `✅ Transaksi berhasil disimpan ke tabel ${tableName}!`;
-            message.className = 'success';
-            formBelanja.reset(); 
-            toggleKonversiSection();
-        }
+    if (!datalist) {
+        datalist = document.createElement('datalist');
+        datalist.id = datalistId;
+        inputElement.parentNode.appendChild(datalist);
+    }
+    
+    // Isi Datalist
+    datalist.innerHTML = ''; 
+    historyData.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        datalist.appendChild(option);
     });
+
+    // Hubungkan Input dengan Datalist
+    inputElement.setAttribute('list', datalistId);
+}
+
+// ==============================================
+// FUNGSI 2: PENGIRIMAN DATA UTAMA
+// ==============================================
+
+async function handleSubmitForm(event) {
+    event.preventDefault(); // Mencegah form melakukan reload halaman
+
+    const submitButton = document.querySelector('button[type="submit"]');
+    submitButton.textContent = 'Menyimpan...';
+    submitButton.disabled = true;
+
+    // 1. Ambil Semua Data Formulir
+    const formData = {
+        // --- 1. Inti Aktivitas & Waktu ---
+        activity_name: getInputValue('activity_name'),
+        activity_category: getInputValue('activity_category'),
+        start_time: getInputValue('start_time'),
+        end_time: getInputValue('end_time'),
+        notes: getInputValue('notes'),
+
+        // --- 2. Emosi & Mental ---
+        mood_main: getInputValue('mood_main'),
+        // Pastikan intensity diubah ke integer jika ada nilai
+        emotion_intensity: getInputValue('emotion_intensity') ? parseInt(getInputValue('emotion_intensity')) : null,
+        trigger_event: getInputValue('trigger_event'),
+        thoughts: getInputValue('thoughts'),
+        response_action: getInputValue('response_action'),
+        
+        // --- 3. Fisiologis & Komunikasi ---
+        physical_sensations: getInputValue('physical_sensations'),
+        heart_rate: getInputValue('heart_rate') ? parseInt(getInputValue('heart_rate')) : null,
+        speech_style: getInputValue('speech_style'),
+        facial_expression: getInputValue('facial_expression'),
+        sleep_quality: getInputValue('sleep_quality'),
+
+        // --- 4. Finansial ---
+        transaction_type: getInputValue('transaction_type', true), // isRadio=true
+        // Menggunakan parseFloat untuk angka, Supabase akan menanganinya
+        amount: getInputValue('amount') ? parseFloat(getInputValue('amount')) : null, 
+        financial_category: getInputValue('financial_category'),
+        financial_purpose: getInputValue('financial_purpose'),
+    };
+    
+    // Filter data agar tidak mengirim kolom dengan nilai null/kosong (kecuali yang wajib)
+    const payload = Object.fromEntries(
+        Object.entries(formData).filter(([_, v]) => v !== null)
+    );
+
+    // 2. Kirim Data ke Supabase
+    const { error } = await supabase
+        .from(TABLE_NAME)
+        .insert([payload]);
+
+    // 3. Tangani Respon
+    if (error) {
+        console.error('Gagal menyimpan data ke Supabase:', error);
+        alert('Gagal menyimpan jurnal! Error: ' + error.message);
+        submitButton.textContent = 'Simpan Jurnal Detail';
+        submitButton.disabled = false;
+    } else {
+        alert('Jurnal berhasil disimpan!');
+        document.getElementById('activityForm').reset(); // Kosongkan form
+        submitButton.textContent = 'Simpan Jurnal Detail';
+        submitButton.disabled = false;
+        // Opsional: Muat ulang autosuggest setelah sukses
+        setupAutosuggest('activity_name', 'activity_name');
+    }
+}
+
+// ==============================================
+// EVENT LISTENERS UTAMA
+// ==============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Setup Autosuggest untuk Input yang Sering Diulang
+    setupAutosuggest('activity_name', 'activity_name');
+    setupAutosuggest('trigger_event', 'trigger_event');
+    setupAutosuggest('financial_category', 'financial_category');
+    
+    // 2. Hubungkan Fungsi Submit ke Formulir
+    const form = document.getElementById('activityForm');
+    if (form) {
+        form.addEventListener('submit', handleSubmitForm);
+    }
 });
