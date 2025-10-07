@@ -1,6 +1,6 @@
 // assets/js/history.js
 
-import { supabase } from "./supabase.js"; // Import client supabase Anda
+import { supabase } from "./supabase.js"; 
 
 const TABLE_NAME = 'activity_log';
 
@@ -24,35 +24,43 @@ function formatTime(timestamp) {
     return `${hours}:${minutes}`;
 }
 
-// Fungsi untuk memformat angka menjadi Rupiah
+// Fungsi untuk memformat angka menjadi Rupiah (Memastikan nol ditampilkan dengan benar)
 function formatRupiah(number) {
-    if (number === null || number === undefined || isNaN(number)) return 'Rp 0';
-    return 'Rp ' + Math.abs(number).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    // Jika null, undefined, atau 0, langsung kembalikan 'Rp 0'
+    if (number === null || number === undefined || isNaN(number) || number === 0) return 'Rp 0';
+    
+    // Pastikan angka selalu positif untuk tampilan (tanda sudah diwakili oleh warna/kategori)
+    const absoluteNumber = Math.abs(number);
+    return 'Rp ' + absoluteNumber.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+// Fungsi untuk mendapatkan nilai string atau '-' jika null/undefined
+function safeValue(value) {
+    return value || '-';
 }
 
 // ==============================================
 // FUNGSI UTAMA: MENGAMBIL & MENGELOMPOKKAN DATA
+// (Tidak ada perubahan mendasar, hanya perhitungan finansial yang sudah benar)
 // ==============================================
 
 async function fetchAndRenderLog() {
+    // ... (Fungsi fetchAndRenderLog tetap sama) ...
     const container = document.getElementById('daily-log-container');
     const loading = document.getElementById('loading-indicator');
     container.innerHTML = '';
     
-    // Tampilkan loading
     if (loading) loading.style.display = 'block';
 
-    // Ambil semua data (pastikan RLS di Supabase sudah diatur untuk SELECT)
     const { data, error } = await supabase
         .from(TABLE_NAME)
         .select('*')
-        .order('start_time', { ascending: false }); // Urutkan dari yang terbaru
+        .order('start_time', { ascending: false }); 
 
     if (loading) loading.style.display = 'none';
 
     if (error) {
         container.innerHTML = `<p style="color: red;">Gagal memuat data: ${error.message}</p>`;
-        console.error("Error fetching data:", error);
         return;
     }
 
@@ -61,9 +69,7 @@ async function fetchAndRenderLog() {
         return;
     }
 
-    // Kelompokkan data berdasarkan tanggal
     const groupedData = data.reduce((acc, entry) => {
-        // Ambil hanya tanggal (tanpa waktu)
         const dateKey = entry.start_time ? entry.start_time.substring(0, 10) : 'unknown';
         
         if (!acc[dateKey]) {
@@ -71,14 +77,12 @@ async function fetchAndRenderLog() {
                 entries: [], 
                 totalExpense: 0, 
                 totalIncome: 0,
-                // Gunakan created_at untuk tanggal jika start_time null
                 date: entry.start_time || entry.created_at
             };
         }
 
         acc[dateKey].entries.push(entry);
 
-        // Hitung total finansial
         if (entry.transaction_type === 'Pengeluaran' && entry.amount) {
             acc[dateKey].totalExpense += entry.amount;
         } else if (entry.transaction_type === 'Pemasukan' && entry.amount) {
@@ -87,16 +91,14 @@ async function fetchAndRenderLog() {
         return acc;
     }, {});
 
-    // Render data yang sudah dikelompokkan
     renderGroupedData(groupedData, container);
 }
 
 // ==============================================
-// FUNGSI UTAMA: MERENDER DATA
+// FUNGSI UTAMA: MERENDER DATA (PERBAIKAN TAMPILAN)
 // ==============================================
 
 function renderGroupedData(groupedData, container) {
-    // Urutkan kunci tanggal dari yang terbaru
     const sortedDates = Object.keys(groupedData).sort().reverse();
 
     sortedDates.forEach(dateKey => {
@@ -111,8 +113,8 @@ function renderGroupedData(groupedData, container) {
             <div class="daily-header">
                 <h3>${dateDisplay}</h3>
                 <div class="daily-financial">
-                    <span style="color: #dc3545;">Pengeluaran: ${formatRupiah(group.totalExpense)}</span>
-                    <span style="color: #28a745;">Pemasukan: ${formatRupiah(group.totalIncome)}</span>
+                    <span class="expense-amount-summary">Pengeluaran: ${formatRupiah(group.totalExpense)}</span>
+                    <span class="income-amount-summary">Pemasukan: ${formatRupiah(group.totalIncome)}</span>
                 </div>
             </div>
         `;
@@ -122,55 +124,86 @@ function renderGroupedData(groupedData, container) {
         group.entries.forEach(entry => {
             const entryCard = document.createElement('div');
             entryCard.className = 'daily-entry-card';
-            entryCard.dataset.id = entry.id; // Untuk keperluan Hapus/Edit
+            entryCard.dataset.id = entry.id; 
 
-            // Format tampilan setiap entri
+            // Gunakan struktur DIV untuk tata letak yang ramah seluler (tidak ada |)
             const entryHtml = `
-                <div class="entry-detail-row">
-                    <strong>Aktivitas:</strong> ${entry.activity_name || '-'} | 
-                    <strong>Kategori:</strong> ${entry.activity_category || '-'}
-                </div>
-                <div class="entry-detail-row">
-                    <strong>Waktu:</strong> ${formatTime(entry.start_time)} 
-                    ${entry.end_time ? `s.d. ${formatTime(entry.end_time)}` : ''}
-                </div>
-                <div class="entry-detail-row">
-                    <strong>Keterangan:</strong> ${entry.notes || '-'}
+                <div class="detail-group">
+                    <div class="detail-item">
+                        <strong>Aktivitas:</strong> ${safeValue(entry.activity_name)}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Kategori:</strong> ${safeValue(entry.activity_category)}
+                    </div>
                 </div>
                 
-                <hr style="border: 0; border-top: 1px dashed #eee; margin: 8px 0;">
+                <div class="detail-group">
+                    <div class="detail-item full-width">
+                        <strong>Waktu:</strong> ${formatTime(entry.start_time)} 
+                        ${entry.end_time ? `s.d. ${formatTime(entry.end_time)}` : ''}
+                    </div>
+                    <div class="detail-item full-width">
+                        <strong>Keterangan Rinci:</strong> ${safeValue(entry.notes)}
+                    </div>
+                </div>
 
-                <div class="entry-detail-row">
-                    <strong>Mood:</strong> ${entry.mood_main || '-'} | 
-                    <strong>Intensitas:</strong> ${entry.emotion_intensity || '-'}
+                <hr class="separator">
+
+                <div class="detail-group">
+                    <div class="detail-item">
+                        <strong>Mood:</strong> ${safeValue(entry.mood_main)}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Intensitas:</strong> ${safeValue(entry.emotion_intensity)}
+                    </div>
                 </div>
-                <div class="entry-detail-row">
-                    <strong>Pemicu:</strong> ${entry.trigger_event || '-'}
+
+                <div class="detail-group">
+                    <div class="detail-item full-width">
+                        <strong>Pemicu:</strong> ${safeValue(entry.trigger_event)}
+                    </div>
+                    <div class="detail-item full-width">
+                        <strong>Respon:</strong> ${safeValue(entry.response_action)}
+                    </div>
                 </div>
-                <div class="entry-detail-row">
-                    <strong>Respon:</strong> ${entry.response_action || '-'}
-                </div>
-                <div class="entry-detail-row">
-                    <strong>Fisik:</strong> ${entry.physical_sensations || '-'} | 
-                    <strong>Jantung:</strong> ${entry.heart_rate || '-'} BPM
-                </div>
-                <div class="entry-detail-row">
-                    <strong>Tidur:</strong> ${entry.sleep_quality || '-'} | 
-                    <strong>Bicara:</strong> ${entry.speech_style || '-'} | 
-                    <strong>Ekspresi:</strong> ${entry.facial_expression || '-'}
+
+                <div class="detail-group three-col">
+                    <div class="detail-item">
+                        <strong>Fisik:</strong> ${safeValue(entry.physical_sensations)}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Jantung:</strong> ${safeValue(entry.heart_rate)} BPM
+                    </div>
+                    <div class="detail-item">
+                        <strong>Tidur:</strong> ${safeValue(entry.sleep_quality)}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Bicara:</strong> ${safeValue(entry.speech_style)}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Ekspresi:</strong> ${safeValue(entry.facial_expression)}
+                    </div>
                 </div>
 
                 ${entry.amount ? `
-                    <hr style="border: 0; border-top: 1px dashed #ccc; margin: 8px 0;">
-                    <div class="entry-detail-row">
-                        <strong>Transaksi:</strong> ${entry.transaction_type || '-'}
+                    <hr class="separator-financial">
+                    <div class="detail-group">
+                        <div class="detail-item full-width">
+                            <strong>Transaksi:</strong> ${safeValue(entry.transaction_type)}
+                        </div>
                     </div>
-                    <div class="entry-detail-row">
-                        <strong>Jumlah:</strong> <span class="${entry.transaction_type === 'Pengeluaran' ? 'expense-amount' : 'income-amount'}">${formatRupiah(entry.amount)}</span> | 
-                        <strong>Kategori:</strong> ${entry.financial_category || '-'}
+                    <div class="detail-group">
+                        <div class="detail-item">
+                            <strong>Jumlah:</strong> <span class="${entry.transaction_type === 'Pengeluaran' ? 'expense-amount-detail' : 'income-amount-detail'}">${formatRupiah(entry.amount)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Kategori:</strong> ${safeValue(entry.financial_category)}
+                        </div>
                     </div>
-                    <div class="entry-detail-row">
-                        <strong>Tujuan:</strong> ${entry.financial_purpose || '-'}
+                    <div class="detail-group">
+                        <div class="detail-item full-width">
+                            <strong>Tujuan:</strong> ${safeValue(entry.financial_purpose)}
+                        </div>
                     </div>
                 ` : ''}
 
@@ -186,14 +219,10 @@ function renderGroupedData(groupedData, container) {
         container.appendChild(dailySummaryDiv);
     });
 
-    // Pasang Event Listener untuk Tombol
     setupActionListeners();
 }
 
-// ==============================================
-// FUNGSI AKSI: DELETE & EDIT (Stubs)
-// ==============================================
-
+// ... (Fungsi handleDelete dan setupActionListeners tetap sama) ...
 async function handleDelete(id) {
     if (!confirm(`Apakah Anda yakin ingin menghapus entri ID: ${id}?`)) {
         return;
@@ -202,14 +231,14 @@ async function handleDelete(id) {
     const { error } = await supabase
         .from(TABLE_NAME)
         .delete()
-        .eq('id', id); // Hanya hapus entri dengan ID ini
+        .eq('id', id);
 
     if (error) {
         alert('Gagal menghapus entri: ' + error.message);
         console.error('Error deleting:', error);
     } else {
         alert('Entri berhasil dihapus!');
-        fetchAndRenderLog(); // Muat ulang daftar
+        fetchAndRenderLog();
     }
 }
 
@@ -221,7 +250,6 @@ function setupActionListeners() {
         });
     });
 
-    // TODO: Implementasi fungsi EDIT (akan melibatkan membuka form dengan data yang sudah terisi)
     document.querySelectorAll('.btn-edit').forEach(button => {
         button.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
@@ -230,7 +258,4 @@ function setupActionListeners() {
     });
 }
 
-// ==============================================
-// INI ADALAH TITIK AWAL EKSEKUSI
-// ==============================================
 document.addEventListener('DOMContentLoaded', fetchAndRenderLog);
