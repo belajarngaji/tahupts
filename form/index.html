@@ -18,15 +18,17 @@
 
             <div class="form-group">
                 <label for="activity_name">Aktivitas:</label>
-                <input type="text" id="activity_name" required placeholder="Contoh: Menyelesaikan laporan X" />
+                <select id="activity_name" required> 
+                    <option value="" disabled selected>Pilih atau Tambahkan Aktivitas Baru</option>
+                </select>
             </div>
 
             <div class="form-group">
-    <label for="activity_name">Aktivitas:</label>
-    <select id="activity_name" required> 
-        <option value="" disabled selected>Pilih atau Tambahkan Aktivitas Baru</option>
-    </select>
-</div>
+                <label for="activity_category">Kategori Proyek/Umum:</label>
+                <select id="activity_category" required>
+                    <option value="" disabled selected>Pilih Kategori</option>
+                </select>
+            </div>
 
             <div class="time-group">
                 <div class="form-group">
