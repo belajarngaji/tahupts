@@ -3,22 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Jurnal Harian</title>
-    <link rel="stylesheet" href="/tahupts/assets/css/history.css">
+    <title>Dashboard Utama | Jurnal Diri</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/history.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 
 <div class="container">
-    <h1 class="main-title">📅 Riwayat Jurnal Diri Harian</h1>
+    <h1 class="main-title">Riwayat Jurnal Diri Harian</h1>
     
     <div id="loading-indicator">Memuat data...</div>
 
     <div id="daily-log-container">
         </div>
-    
-    <p style="text-align: center; margin-top: 40px;">
-        <a href="/tahupts/index.html">← Kembali ke Form Input</a>
-    </p>
+</div>
+
+<div class="navbar">
+    <a href="index.html" class="active">
+        <span class="icon"><i class="fas fa-list-alt"></i></span>
+        Riwayat
+    </a>
+    <a href="form.html">
+        <span class="icon"><i class="fas fa-edit"></i></span>
+        Catat Baru
+    </a>
+    <a href="dashboard.html">
+        <span class="icon"><i class="fas fa-chart-line"></i></span>
+        Analisis
+    </a>
+    <a href="profile.html">
+        <span class="icon"><i class="fas fa-user"></i></span>
+        Akun
+    </a>
 </div>
 
 <script type="module" src="/tahupts/assets/js/history.js"></script>
