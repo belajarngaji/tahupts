@@ -4,167 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jurnal Aktivitas & Diri Pribadi</title>
-    <style>
-        /* Gaya Sederhana untuk Struktur */
-        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2 { border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 20px; color: #333; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        textarea { resize: vertical; }
-        .form-group { margin-bottom: 15px; }
-        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; }
-        .radio-group label, .checkbox-group label { font-weight: normal; display: inline-block; margin-right: 15px; }
-    </style>
+    <link rel="stylesheet" href="/tahupts/assets/css/form.css">
 </head>
 <body>
 
 <div class="container">
-    <h1>📝 Catat Jurnal Diri Harian</h1>
-    
+    <h1 class="main-title">📝 Catat Jurnal Diri Harian</h1>
+
     <form id="activityForm">
-        
-        <h2>1. Aktivitas & Waktu Utama ⏱️</h2>
-        
-        <div class="form-group">
-            <label for="activity_name">Aktivitas:</label>
-            <input type="text" id="activity_name" required placeholder="Contoh: Menyelesaikan laporan X" />
-        </div>
-        
-        <div class="form-group">
-            <label for="activity_category">Kategori Proyek/Umum:</label>
-            <select id="activity_category">
-                <option value="">Pilih Kategori</option>
-                <option value="Pekerjaan">Pekerjaan</option>
-                <option value="Pribadi">Pribadi</option>
-                <option value="Belajar">Belajar / Edukasi</option>
-                <option value="Kebugaran">Kebugaran / Kesehatan</option>
-                <option value="Finansial">Keuangan</option>
-            </select>
-        </div>
 
-        <div class="form-group">
-            <label for="start_time">Waktu Mulai:</label>
-            <input type="datetime-local" id="start_time" required />
-        </div>
+        <section class="form-section">
+            <h2>1. Aktivitas & Waktu Utama <span class="icon">⏱️</span></h2>
 
-        <div class="form-group">
-            <label for="end_time">Waktu Selesai:</label>
-            <input type="datetime-local" id="end_time" />
-        </div>
+            <div class="form-group">
+                <label for="activity_name">Aktivitas:</label>
+                <input type="text" id="activity_name" required placeholder="Contoh: Menyelesaikan laporan X" />
+            </div>
 
-        <div class="form-group">
-            <label for="notes">Keterangan Rinci:</label>
-            <textarea id="notes" rows="3" placeholder="Jelaskan detail yang perlu Anda ingat dari aktivitas ini."></textarea>
-        </div>
+            <div class="form-group">
+                <label for="activity_category">Kategori Proyek/Umum:</label>
+                <select id="activity_category" required> 
+                    <option value="" disabled selected>Pilih Kategori</option>
+                </select>
+            </div>
 
-        <h2>2. Kondisi Emosional & Mental 🤔</h2>
-        
-        <div class="form-group">
-            <label for="mood_main">Mood/Emosi Utama:</label>
-            <select id="mood_main">
-                <option value="">Pilih Mood</option>
-                <option value="Senang">Senang</option>
-                <option value="Cemas">Cemas</option>
-                <option value="Marah">Marah</option>
-                <option value="Netral">Netral / Biasa</option>
-                <option value="Lelah">Lelah / Capek</option>
-                <option value="Stres">Stres</option>
-            </select>
-        </div>
+            <div class="time-group">
+                <div class="form-group">
+                    <label for="start_time">Waktu Mulai:</label>
+                    <input type="datetime-local" id="start_time" required />
+                </div>
+                <div class="form-group">
+                    <label for="end_time">Waktu Selesai:</label>
+                    <input type="datetime-local" id="end_time" />
+                </div>
+            </div>
 
-        <div class="form-group">
-            <label for="emotion_intensity">Intensitas Emosi (1-10):</label>
-            <input type="number" id="emotion_intensity" min="1" max="10" placeholder="Contoh: 8" />
-        </div>
+            <div class="form-group">
+                <label for="notes">Keterangan Rinci:</label>
+                <textarea id="notes" rows="3" placeholder="Detail, tantangan, atau hasil dari aktivitas."></textarea>
+            </div>
+        </section>
 
-        <div class="form-group">
-            <label for="trigger_event">Pemicu (Trigger):</label>
-            <input type="text" id="trigger_event" placeholder="Apa yang memicu kondisi ini?" />
-        </div>
-        
-        <div class="form-group">
-            <label for="thoughts">Apa yang Dipikirkan:</label>
-            <textarea id="thoughts" rows="3" placeholder="Alur pikiran atau kekhawatiran saat itu."></textarea>
-        </div>
+        <section class="form-section">
+            <h2>2. Kondisi Emosional & Mental <span class="icon">🤔</span></h2>
 
-        <div class="form-group">
-            <label for="response_action">Respon/Penanganan:</label>
-            <textarea id="response_action" rows="2" placeholder="Apa yang Anda lakukan untuk merespons pemicu/emosi?"></textarea>
-        </div>
+            <div class="form-group">
+                <label for="mood_main">Mood/Emosi Utama:</label>
+                <select id="mood_main">
+                    <option value="" disabled selected>Pilih Mood</option>
+                    <option value="Senang">Senang</option>
+                    <option value="Cemas">Cemas</option>
+                    <option value="Marah">Marah</option>
+                    <option value="Netral">Netral / Biasa</option>
+                    <option value="Lelah">Lelah / Capek</option>
+                    <option value="Stres">Stres</option>
+                </select>
+            </div>
 
+            <div class="form-group">
+                <label for="emotion_intensity">Intensitas Emosi (1-10):</label>
+                <input type="number" id="emotion_intensity" min="1" max="10" placeholder="Contoh: 8 (1=Rendah, 10=Tinggi)" />
+            </div>
 
-        <h2>3. Fisiologis & Komunikasi 🧘</h2>
-        
-        <div class="form-group">
-            <label for="physical_sensations">Sensasi Fisik:</label>
-            <textarea id="physical_sensations" rows="2" placeholder="Contoh: Kepala pusing, Otot leher tegang, Perut kembung."></textarea>
-        </div>
+            <div class="form-group">
+                <label for="trigger_event">Pemicu (Trigger):</label>
+                <input type="text" id="trigger_event" placeholder="Apa yang memicu kondisi ini?" />
+            </div>
 
-        <div class="form-group">
-            <label for="heart_rate">Detak Jantung (BPM):</label>
-            <input type="number" id="heart_rate" placeholder="Opsional, contoh: 75" />
-        </div>
+            <div class="form-group">
+                <label for="thoughts">Apa yang Dipikirkan:</label>
+                <textarea id="thoughts" rows="3" placeholder="Alur pikiran atau kekhawatiran yang dominan."></textarea>
+            </div>
 
-        <div class="form-group">
-            <label for="speech_style">Cara Berbicara:</label>
-            <select id="speech_style">
-                <option value="">Pilih Style</option>
-                <option value="Normal">Normal</option>
-                <option value="Cepat">Cepat</option>
-                <option value="Lambat">Lambat</option>
-                <option value="Tegang">Tegang</option>
-                <option value="Datar">Datar</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label for="response_action">Respon/Penanganan:</label>
+                <textarea id="response_action" rows="2" placeholder="Tindakan yang Anda ambil untuk merespons."></textarea>
+            </div>
+        </section>
 
-        <div class="form-group">
-            <label for="facial_expression">Ekspresi Wajah:</label>
-            <select id="facial_expression">
-                <option value="">Pilih Ekspresi</option>
-                <option value="Datar">Datar</option>
-                <option value="Senyum">Senyum</option>
-                <option value="Cemberut">Cemberut</option>
-                <option value="Mengernyit">Mengernyit</option>
-            </select>
-        </div>
+        <section class="form-section">
+            <h2>3. Fisiologis & Komunikasi <span class="icon">🧘</span></h2>
 
-        <div class="form-group">
-            <label for="sleep_quality">Kualitas Tidur Tadi Malam:</label>
-            <select id="sleep_quality">
-                <option value="">Pilih Kualitas</option>
-                <option value="Baik">Baik</option>
-                <option value="Sedang">Sedang</option>
-                <option value="Buruk">Buruk</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label for="physical_sensations">Sensasi Fisik:</label>
+                <textarea id="physical_sensations" rows="2" placeholder="Contoh: Kepala pusing, Otot leher tegang."></textarea>
+            </div>
 
-        <h2>4. Transaksi Finansial 💰</h2>
-        
-        <div class="form-group radio-group">
-            <label>Tipe Transaksi:</label>
-            <input type="radio" id="trans_keluar" name="transaction_type" value="Pengeluaran" />
-            <label for="trans_keluar">Pengeluaran (Keluar)</label>
-            <input type="radio" id="trans_masuk" name="transaction_type" value="Pemasukan" />
-            <label for="trans_masuk">Pemasukan (Masuk)</label>
-        </div>
+            <div class="form-group">
+                <label for="heart_rate">Detak Jantung (BPM):</label>
+                <input type="number" id="heart_rate" placeholder="Opsional, contoh: 75" />
+            </div>
 
-        <div class="form-group">
-            <label for="amount">Jumlah (Rp):</label>
-            <input type="number" id="amount" step="0.01" placeholder="Contoh: 50000" />
-        </div>
+            <div class="form-group">
+                <label for="sleep_quality">Kualitas Tidur Tadi Malam:</label>
+                <select id="sleep_quality">
+                    <option value="" disabled selected>Pilih Kualitas</option>
+                    <option value="Baik">Baik</option>
+                    <option value="Sedang">Sedang</option>
+                    <option value="Buruk">Buruk</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="financial_category">Kategori Finansial:</label>
-            <input type="text" id="financial_category" placeholder="Contoh: Makanan, Transportasi, Kebutuhan Mendesak" />
-        </div>
+            <div class="form-group">
+                <label for="speech_style">Cara Berbicara:</label>
+                <select id="speech_style">
+                    <option value="" disabled selected>Pilih Style</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Cepat">Cepat</option>
+                    <option value="Lambat">Lambat</option>
+                    <option value="Tegang">Tegang</option>
+                    <option value="Datar">Datar</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="financial_purpose">Tujuan Finansial:</label>
-            <input type="text" id="financial_purpose" placeholder="Contoh: Beli kopi karena stres" />
-        </div>
+            <div class="form-group">
+                <label for="facial_expression">Ekspresi Wajah:</label>
+                <select id="facial_expression">
+                    <option value="" disabled selected>Pilih Ekspresi</option>
+                    <option value="Datar">Datar</option>
+                    <option value="Senyum">Senyum</option>
+                    <option value="Cemberut">Cemberut</option>
+                    <option value="Mengernyit">Mengernyit</option>
+                </select>
+            </div>
+        </section>
 
-        <button type="submit">Simpan Jurnal Detail</button>
+        <section class="form-section">
+            <h2>4. Transaksi Finansial <span class="icon">💰</span></h2>
+
+            <div class="form-group radio-group">
+                <label class="sub-label">Tipe Transaksi:</label>
+                <div class="radio-options">
+                    <input type="radio" id="trans_keluar" name="transaction_type" value="Pengeluaran" checked />
+                    <label for="trans_keluar">Pengeluaran</label>
+                    <input type="radio" id="trans_masuk" name="transaction_type" value="Pemasukan" />
+                    <label for="trans_masuk">Pemasukan</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Jumlah (Rp):</label>
+                <input type="number" id="amount" step="0.01" placeholder="Contoh: 50000" />
+            </div>
+
+            <div class="form-group">
+                <label for="financial_category">Kategori Finansial:</label>
+                <select id="financial_category" required>
+                    <option value="" disabled selected>Pilih Kategori</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="financial_purpose">Tujuan Finansial:</label>
+                <input type="text" id="financial_purpose" placeholder="Contoh: Beli kopi karena stres" />
+            </div>
+        </section>
+
+        <button type="submit" class="submit-button">Simpan Jurnal Detail</button>
     </form>
 </div>
 
