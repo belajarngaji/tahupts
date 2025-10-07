@@ -33,7 +33,7 @@ async function setupAutosuggest(inputId, columnName) {
     const { data, error } = await supabase
         .from(TABLE_NAME)
         .select(columnName)
-        .limit(100); // Batasi hasil untuk efisiensi
+        .limit(100); 
 
     if (error) {
         console.error(`Gagal memuat autosuggest untuk ${columnName}:`, error);
@@ -50,9 +50,13 @@ async function setupAutosuggest(inputId, columnName) {
     if (!datalist) {
         datalist = document.createElement('datalist');
         datalist.id = datalistId;
-        // Pastikan input memiliki atribut 'list' yang sesuai
-        inputElement.setAttribute('list', datalistId); 
-        inputElement.parentNode.appendChild(datalist);
+        // Hanya tambahkan datalist jika inputnya adalah teks biasa (bukan select)
+        if (inputElement.tagName.toLowerCase() === 'input') {
+             inputElement.setAttribute('list', datalistId); 
+             inputElement.parentNode.appendChild(datalist);
+        } else {
+            return; // Jangan lakukan apa-apa jika itu bukan input teks
+        }
     }
 
     // Isi Datalist
@@ -84,9 +88,10 @@ async function populateCategoryDropdown(selectId, columnName) {
     }
 
     const historyData = [...new Set(data.map(item => item[columnName]).filter(Boolean))];
-    
+
     // 2. Kosongkan dan buat opsi default
-    selectElement.innerHTML = '<option value="" disabled selected>Pilih Kategori</option>';
+    const defaultText = selectId === 'activity_name' ? 'Pilih atau Tambahkan Aktivitas' : 'Pilih Kategori';
+    selectElement.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
 
     // 3. Isi dengan data sejarah
     historyData.forEach(value => {
@@ -106,9 +111,10 @@ async function populateCategoryDropdown(selectId, columnName) {
     // 5. Tambahkan Logika Event Listener untuk Menangani 'Tambahkan Baru'
     selectElement.addEventListener('change', () => {
         if (selectElement.value === newOptionValue) {
-            const newCategory = prompt(`Masukkan nama Kategori baru untuk ${columnName.replace('_', ' ')}:`);
+            // Teks prompt disesuaikan berdasarkan ID
+            const promptTitle = selectId === 'activity_name' ? 'Aktivitas' : 'Kategori';
+            const newCategory = prompt(`Masukkan nama ${promptTitle} baru:`);
             if (newCategory) {
-                // Tambahkan kategori baru ke dropdown dan setel sebagai pilihan saat ini
                 const newOpt = document.createElement('option');
                 newOpt.value = newCategory;
                 newOpt.textContent = newCategory;
@@ -117,8 +123,7 @@ async function populateCategoryDropdown(selectId, columnName) {
                 selectElement.insertBefore(newOpt, newOption);
                 selectElement.value = newCategory; // Setel nilai yang baru dibuat
             } else {
-                // Jika pengguna membatalkan prompt, kembalikan ke "Pilih Kategori"
-                selectElement.value = "";
+                selectElement.value = ""; // Kembali ke default jika dibatalkan
             }
         }
     });
@@ -127,7 +132,6 @@ async function populateCategoryDropdown(selectId, columnName) {
 
 // ==============================================
 // FUNGSI 3: PENGIRIMAN DATA UTAMA
-// (Logika ini tetap sama)
 // ==============================================
 
 async function handleSubmitForm(event) {
@@ -139,35 +143,32 @@ async function handleSubmitForm(event) {
 
     // 1. Ambil Semua Data Formulir
     const formData = {
-        // --- Inti Aktivitas & Waktu ---
-        activity_name: getInputValue('activity_name'),
+        // Ambil activity_name dari SELECT (dropdown)
+        activity_name: getInputValue('activity_name'), 
         activity_category: getInputValue('activity_category'),
         start_time: getInputValue('start_time'),
         end_time: getInputValue('end_time'),
         notes: getInputValue('notes'),
 
-        // --- Emosi & Mental ---
         mood_main: getInputValue('mood_main'),
         emotion_intensity: getInputValue('emotion_intensity') ? parseInt(getInputValue('emotion_intensity')) : null,
         trigger_event: getInputValue('trigger_event'),
         thoughts: getInputValue('thoughts'),
         response_action: getInputValue('response_action'),
-        
-        // --- Fisiologis & Komunikasi ---
+
         physical_sensations: getInputValue('physical_sensations'),
         heart_rate: getInputValue('heart_rate') ? parseInt(getInputValue('heart_rate')) : null,
         speech_style: getInputValue('speech_style'),
         facial_expression: getInputValue('facial_expression'),
         sleep_quality: getInputValue('sleep_quality'),
 
-        // --- Finansial ---
         transaction_type: getInputValue('transaction_type', true), 
         amount: getInputValue('amount') ? parseFloat(getInputValue('amount')) : null, 
-        financial_category: getInputValue('financial_category'),
+        // Ambil financial_category dari SELECT (dropdown)
+        financial_category: getInputValue('financial_category'), 
         financial_purpose: getInputValue('financial_purpose'),
     };
-    
-    // Filter data agar tidak mengirim kolom dengan nilai null/kosong
+
     const payload = Object.fromEntries(
         Object.entries(formData).filter(([_, v]) => v !== null)
     );
@@ -184,11 +185,15 @@ async function handleSubmitForm(event) {
     } else {
         alert('Jurnal berhasil disimpan!');
         document.getElementById('activityForm').reset(); 
-        
-        // Muat ulang kategori/autosuggest agar data baru yang ditambahkan langsung tersedia
+
+        // Muat ulang dropdown dan autosuggest yang relevan
+        populateCategoryDropdown('activity_name', 'activity_name');
         populateCategoryDropdown('activity_category', 'activity_category');
         populateCategoryDropdown('financial_category', 'financial_category');
-        setupAutosuggest('activity_name', 'activity_name'); 
+        
+        // Cukup panggil ulang autosuggest untuk kolom teks bebas
+        setupAutosuggest('trigger_event', 'trigger_event'); 
+        setupAutosuggest('financial_purpose', 'financial_purpose');
     }
     
     submitButton.textContent = 'Simpan Jurnal Detail';
@@ -199,13 +204,14 @@ async function handleSubmitForm(event) {
 // EVENT LISTENERS UTAMA
 // ==============================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Setup Dropdown Dinamis untuk Kategori (Activity & Financial)
+    // 1. Setup Dropdown Dinamis (Aktivitas & Kategori Finansial)
+    populateCategoryDropdown('activity_name', 'activity_name');
     populateCategoryDropdown('activity_category', 'activity_category');
     populateCategoryDropdown('financial_category', 'financial_category');
     
-    // 2. Setup Autosuggest untuk Input Teks Bebas
-    setupAutosuggest('activity_name', 'activity_name');
+    // 2. Setup Autosuggest untuk Input Teks Bebas (Pemicu & Tujuan Finansial)
     setupAutosuggest('trigger_event', 'trigger_event');
+    setupAutosuggest('financial_purpose', 'financial_purpose'); 
 
     // 3. Hubungkan Fungsi Submit ke Formulir
     const form = document.getElementById('activityForm');
