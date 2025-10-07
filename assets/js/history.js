@@ -1,12 +1,12 @@
 // assets/js/history.js
 
-// Pastikan Anda memiliki file supabase.js yang benar di lokasi yang sesuai
+// 1. Integrasi Supabase Client (Pastikan path ke supabase.js benar)
 import { supabase } from "./supabase.js"; 
 
 const TABLE_NAME = 'activity_log';
 
 // ==============================================
-// UTILITY FUNCTONS
+// FUNGSI UTILITY: FORMATTING
 // ==============================================
 
 // Fungsi untuk memformat tanggal ke format lokal (contoh: Selasa, 7/10/2025)
@@ -16,18 +16,34 @@ function formatDate(dateString) {
     return date.toLocaleDateString('id-ID', options);
 }
 
-// Fungsi untuk memformat waktu ke format jam (contoh: 14:30)
+// FUNGSI KRITIS: Memastikan Jam Dibaca Sesuai Data yang Tersimpan (Mengatasi Timezone Offset)
 function formatTime(timestamp) {
     if (!timestamp) return '-';
+    
+    // Asumsi data dari 'datetime-local' disimpan di Supabase sebagai 'YYYY-MM-DDTHH:MM:SS'
+    // Parsing string adalah cara paling pasti untuk mendapatkan jam yang diinput.
+    if (timestamp.includes('T')) {
+        try {
+            const timePart = timestamp.split('T')[1];
+            if (timePart) {
+                const parts = timePart.split(':');
+                // Hanya ambil Jam dan Menit (abaikan detik)
+                if (parts.length >= 2) {
+                    return `${parts[0]}:${parts[1]}`;
+                }
+            }
+        } catch (e) {
+            console.warn("Gagal parsing waktu dari string, fallback ke metode Date.");
+        }
+    }
+
+    // Fallback menggunakan metode Date (berpotensi mengalami offset timezone)
     const date = new Date(timestamp);
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 // Fungsi untuk memformat angka menjadi Rupiah (Memastikan nol ditampilkan dengan benar)
 function formatRupiah(number) {
-    // Jika null, undefined, atau 0, langsung kembalikan 'Rp 0'
     if (number === null || number === undefined || isNaN(number) || number === 0) return 'Rp 0';
     
     const absoluteNumber = Math.abs(number);
@@ -46,8 +62,9 @@ function safeValue(value) {
 async function fetchAndRenderLog() {
     const container = document.getElementById('daily-log-container');
     const loading = document.getElementById('loading-indicator');
-    container.innerHTML = '';
     
+    // Kosongkan dan tampilkan loading
+    container.innerHTML = '';
     if (loading) loading.style.display = 'block';
 
     const { data, error } = await supabase
@@ -59,6 +76,7 @@ async function fetchAndRenderLog() {
 
     if (error) {
         container.innerHTML = `<p style="color: red;">Gagal memuat data: ${error.message}</p>`;
+        console.error("Error fetching data:", error);
         return;
     }
 
@@ -69,6 +87,7 @@ async function fetchAndRenderLog() {
 
     // Kelompokkan data berdasarkan tanggal dan hitung total finansial
     const groupedData = data.reduce((acc, entry) => {
+        // Gunakan hanya tanggal (YYYY-MM-DD) sebagai kunci
         const dateKey = entry.start_time ? entry.start_time.substring(0, 10) : 'unknown';
         
         if (!acc[dateKey]) {
@@ -76,12 +95,14 @@ async function fetchAndRenderLog() {
                 entries: [], 
                 totalExpense: 0, 
                 totalIncome: 0,
+                // Gunakan created_at jika start_time null
                 date: entry.start_time || entry.created_at
             };
         }
 
         acc[dateKey].entries.push(entry);
 
+        // Hitung total finansial harian
         if (entry.transaction_type === 'Pengeluaran' && entry.amount) {
             acc[dateKey].totalExpense += entry.amount;
         } else if (entry.transaction_type === 'Pemasukan' && entry.amount) {
@@ -94,7 +115,7 @@ async function fetchAndRenderLog() {
 }
 
 // ==============================================
-// FUNGSI UTAMA: MERENDER DATA (FINAL)
+// FUNGSI UTAMA: MERENDER DATA (FINAL LAYOUT)
 // ==============================================
 
 function renderGroupedData(groupedData, container) {
@@ -108,13 +129,15 @@ function renderGroupedData(groupedData, container) {
         const dailySummaryDiv = document.createElement('div');
         dailySummaryDiv.className = 'daily-summary';
 
+        const totalDifference = group.totalIncome - group.totalExpense;
+        
         const headerHtml = `
             <div class="daily-header">
                 <h3 class="daily-date">${dateDisplay}</h3>
                 <div class="daily-financial-summary">
                     <span class="pendapatan">Pendapatan: ${formatRupiah(group.totalIncome)}</span>
                     <span class="pengeluaran">Pengeluaran: ${formatRupiah(group.totalExpense)}</span>
-                    <span class="total">Total: ${formatRupiah(group.totalIncome - group.totalExpense)}</span>
+                    <span class="total">Total: ${formatRupiah(totalDifference)}</span>
                 </div>
             </div>
         `;
@@ -240,6 +263,7 @@ async function handleDelete(id) {
 
     if (error) {
         alert('Gagal menghapus entri: ' + error.message);
+        console.error('Error deleting:', error);
     } else {
         alert('Entri berhasil dihapus!');
         fetchAndRenderLog(); // Muat ulang daftar
@@ -253,10 +277,9 @@ function setupActionListeners() {
         });
     });
     
-    // Asumsi halaman form input dinamakan 'form.html'
+    // Fungsi Edit: Mengarahkan ke form.html dengan ID untuk dimuat
     document.querySelectorAll('.btn-edit').forEach(button => {
         button.addEventListener('click', (e) => {
-            // Anda akan mengarahkan pengguna ke halaman form dengan parameter ID untuk dimuat
             const id = e.target.dataset.id;
             window.location.href = `form.html?editId=${id}`;
         });
@@ -264,6 +287,6 @@ function setupActionListeners() {
 }
 
 // ==============================================
-// INI ADALAH TITIK AWAL EKSEKUSI
+// INI ADALAH TITIK AWAL EKSESEKUSI
 // ==============================================
 document.addEventListener('DOMContentLoaded', fetchAndRenderLog);
