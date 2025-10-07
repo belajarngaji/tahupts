@@ -1,0 +1,210 @@
+/* assets/css/history.css */
+
+/* ==============================================
+   TEMA DASAR & STRUKTUR
+   ============================================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f4f8; /* Biru muda sangat soft */
+    padding: 20px 10px; /* Padding untuk mobile */
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.main-title {
+    color: #007bff;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+#loading-indicator {
+    text-align: center;
+    color: #007bff;
+    font-weight: 500;
+    margin: 20px 0;
+}
+
+/* ==============================================
+   KARTU RINGKASAN HARIAN (DAILY SUMMARY)
+   ============================================== */
+.daily-summary {
+    background-color: #ffffff; /* Putih */
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border: 1px solid #dcdfe6;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.daily-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e6ed;
+    margin-bottom: 10px;
+}
+
+.daily-header h3 {
+    margin: 0;
+    font-size: 1.1em; /* Lebih kecil untuk mobile */
+    color: #333;
+    font-weight: 700;
+}
+
+/* Ringkasan Finansial Harian */
+.daily-financial {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9em;
+}
+
+.expense-amount-summary { 
+    color: #dc3545; /* Merah untuk pengeluaran */
+    font-weight: 600;
+}
+
+.income-amount-summary { 
+    color: #28a745; /* Hijau untuk pemasukan */
+    font-weight: 600;
+}
+
+/* ==============================================
+   DETAIL ENTRI (DAILY ENTRY CARD)
+   ============================================== */
+.daily-entry-card {
+    background: #fcfcfc;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #f0f4f8;
+    margin-top: 15px;
+}
+
+/* Flexbox untuk Detail Item (Mobile-Friendly) */
+.detail-group {
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 5px 15px; /* Jarak antar baris dan antar kolom */
+    margin-bottom: 10px;
+}
+
+.detail-item {
+    /* Default: 45% agar bisa 2 kolom di layar lebar */
+    flex: 1 1 45%; 
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.detail-item strong {
+    color: #007bff; /* Biru untuk label */
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+/* Item yang butuh lebar penuh (Keterangan, Pemicu, Respon) */
+.detail-item.full-width {
+    flex: 1 1 100%; 
+}
+
+/* Garis Pemisah */
+.separator { 
+    border: 0; 
+    border-top: 1px dashed #eee; 
+    margin: 12px 0; 
+}
+.separator-financial { 
+    border: 0; 
+    border-top: 1px dashed #ccc; 
+    margin: 12px 0; 
+}
+
+/* Warna Finansial di Detail */
+.expense-amount-detail { 
+    color: #dc3545; 
+    font-weight: 700;
+}
+.income-amount-detail { 
+    color: #28a745; 
+    font-weight: 700;
+}
+
+/* ==============================================
+   ACTION BUTTONS
+   ============================================== */
+.action-buttons {
+    margin-top: 15px;
+    text-align: right;
+}
+
+.action-buttons button {
+    padding: 8px 15px;
+    margin-left: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-edit {
+    background-color: #ffc107; /* Kuning (Warna edit standar) */
+    color: #333;
+}
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545; /* Merah */
+    color: white;
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+/* ==============================================
+   MEDIA QUERIES (RESPONSIVENESS)
+   ============================================== */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+        margin: 10px auto;
+    }
+
+    .main-title {
+        font-size: 1.6em;
+    }
+
+    /* Tumpuk Header Harian */
+    .daily-header {
+        flex-direction: column; 
+        align-items: flex-start;
+    }
+    .daily-header h3 {
+        margin-bottom: 5px;
+        font-size: 1.2em;
+    }
+    
+    /* Tumpuk Ringkasan Finansial */
+    .daily-financial {
+        flex-direction: column; 
+        gap: 5px;
+    }
+
+    /* Paksakan semua detail item menjadi satu kolom di layar kecil */
+    .detail-item, .detail-item.full-width {
+        flex: 1 1 100%; 
+        margin-bottom: 2px;
+    }
+}
