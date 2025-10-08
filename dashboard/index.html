@@ -6,9 +6,9 @@
     <title>Analisis & Dashboard</title>
     <link rel="stylesheet" href="/tahupts/assets/css/history.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
+
     <style>
         /* Gaya khusus untuk dashboard */
         .chart-card {
@@ -17,7 +17,19 @@
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            /* Tambahkan Transisi untuk efek 'bergerak up' saat hover (Desktop) */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         }
+        
+        /* Efek 'membesar' saat kursor di atas kartu (Desktop Only) */
+        @media (min-width: 768px) {
+            .chart-card:hover {
+                transform: translateY(-5px) scale(1.005);
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+                cursor: default;
+            }
+        }
+
         .chart-card h2 {
             color: #4CAF50;
             font-size: 1.2em;
@@ -26,33 +38,54 @@
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
+
+        /* CONTAINER KHUSUS CHART UNTUK RESPONSIVITAS TINGGI */
+        .chart-container {
+            position: relative;
+            /* Tentukan tinggi yang cukup untuk semua grafik kecuali Donut */
+            height: 350px; 
+            margin: 0 auto;
+        }
+        
+        /* Aturan khusus untuk Donut Chart agar tidak terlalu tinggi */
+        #expenseDonutChart {
+            max-height: 250px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1 class="main-title">📈 Wawasan & Analisis Diri</h1>
-    
+
     <div id="loading-indicator">Memuat dan menganalisis data...</div>
 
     <div class="chart-card">
         <h2>Pola Aktivitas Harian (Frekuensi Jam)</h2>
-        <canvas id="activityBarChart"></canvas>
+        <div class="chart-container">
+            <canvas id="activityBarChart"></canvas>
+        </div>
     </div>
 
     <div class="chart-card">
         <h2>Distribusi Pengeluaran (Bulan Terakhir)</h2>
-        <canvas id="expenseDonutChart"></canvas>
+        <div class="chart-container" style="height: 280px;">
+            <canvas id="expenseDonutChart"></canvas>
+        </div>
     </div>
-    
+
     <div class="chart-card">
         <h2>Tren Mood Rata-Rata per Jam</h2>
-        <canvas id="moodLineChart"></canvas>
+        <div class="chart-container">
+            <canvas id="moodLineChart"></canvas>
+        </div>
     </div>
 
     <div class="chart-card">
         <h2>Pemasukan & Pengeluaran Bulanan</h2>
-        <canvas id="financialLineChart"></canvas>
+        <div class="chart-container">
+            <canvas id="financialLineChart"></canvas>
+        </div>
     </div>
 
 </div>
