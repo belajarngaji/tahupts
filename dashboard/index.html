@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis & Dashboard</title>
+    <link rel="stylesheet" href="/tahupts/assets/css/history.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        /* Gaya khusus untuk dashboard */
+        .chart-card {
+            background-color: #282828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .chart-card h2 {
+            color: #4CAF50;
+            font-size: 1.2em;
+            margin-top: 0;
+            border-bottom: 1px solid #3e3e3e;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="main-title">📈 Wawasan & Analisis Diri</h1>
+    
+    <div id="loading-indicator">Memuat dan menganalisis data...</div>
+
+    <div class="chart-card">
+        <h2>Pola Aktivitas Harian (Frekuensi Jam)</h2>
+        <canvas id="activityBarChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h2>Distribusi Pengeluaran (Bulan Terakhir)</h2>
+        <canvas id="expenseDonutChart"></canvas>
+    </div>
+    
+    <div class="chart-card">
+        <h2>Tren Mood Rata-Rata per Jam</h2>
+        <canvas id="moodLineChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h2>Pemasukan & Pengeluaran Bulanan</h2>
+        <canvas id="financialLineChart"></canvas>
+    </div>
+
+</div>
+
+<div class="navbar">
+    <a href="index.html">
+        <span class="icon"><i class="fas fa-list-alt"></i></span>
+        Riwayat
+    </a>
+    <a href="form.html">
+        <span class="icon"><i class="fas fa-edit"></i></span>
+        Catat Baru
+    </a>
+    <a href="dashboard.html" class="active">
+        <span class="icon"><i class="fas fa-chart-line"></i></span>
+        Analisis
+    </a>
+    <a href="profile.html">
+        <span class="icon"><i class="fas fa-user"></i></span>
+        Akun
+    </a>
+</div>
+
+<script type="module" src="/tahupts/assets/js/dashboard.js"></script>
+
+</body>
+</html>
