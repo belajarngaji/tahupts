@@ -1,124 +1,14 @@
-// assets/js/dashboard.js
+// assets/js/dashboard.js (File Utama)
 
 import { supabase } from "./supabase.js"; 
+import { renderActivityChart } from "./charts/chart-activity.js";
+import { renderExpenseChart } from "./charts/chart-expense.js";
+import { renderMoodChart } from "./charts/chart-mood.js";
 
 const TABLE_NAME = 'activity_log';
 
-// Helper function untuk mengambil Jam (00-23)
-function getHour(timestamp) {
-    if (!timestamp) return null;
-    try {
-        // Ambil komponen jam dari string timestamp (lebih andal dari new Date)
-        const timePart = timestamp.split('T')[1];
-        if (timePart) {
-            return parseInt(timePart.split(':')[0], 10);
-        }
-    } catch (e) {
-        console.error("Gagal parse jam:", e);
-    }
-    // Fallback jika parsing string gagal
-    const date = new Date(timestamp);
-    return date.getHours(); 
-}
-
 // ==============================================
-// 1. ANALISIS POLA AKTIVITAS HARIAN (ANALISIS JAM)
-// ==============================================
-
-function prepareActivityData(data) {
-    // Inisialisasi frekuensi untuk setiap jam
-    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')); // ["00", "01", ..., "23"]
-    const activityCount = {};
-
-    data.forEach(entry => {
-        const hour = getHour(entry.start_time);
-        const activity = entry.activity_name || 'Tidak Diketahui';
-
-        if (hour !== null) {
-            const hourKey = String(hour).padStart(2, '0');
-            if (!activityCount[hourKey]) {
-                activityCount[hourKey] = {};
-            }
-            activityCount[hourKey][activity] = (activityCount[hourKey][activity] || 0) + 1;
-        }
-    });
-
-    // Sederhanakan data untuk grafik: temukan aktivitas paling dominan di setiap jam
-    const dominantActivityData = hours.map(h => {
-        const activities = activityCount[h];
-        if (!activities) return { activity: 'Istirahat/Kosong', count: 0 };
-        
-        // Cari aktivitas dengan hitungan tertinggi
-        const dominant = Object.entries(activities).reduce((a, b) => a[1] > b[1] ? a : b, ['Istirahat/Kosong', 0]);
-        return { 
-            activity: dominant[0], 
-            count: dominant[1] 
-        };
-    });
-
-    // Untuk grafik bar: Jam vs. Frekuensi Total Aktivitas
-    const labels = hours.map(h => `${h}:00`);
-    const counts = hours.map(h => {
-        const hourData = activityCount[h];
-        if (!hourData) return 0;
-        return Object.values(hourData).reduce((sum, count) => sum + count, 0);
-    });
-
-    return { labels, counts };
-}
-
-function renderActivityChart(chartData) {
-    const ctx = document.getElementById('activityBarChart').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: chartData.labels,
-            datasets: [{
-                label: 'Total Entri Aktivitas',
-                data: chartData.counts,
-                backgroundColor: '#4CAF50', // Warna hijau
-                borderRadius: 4,
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Jumlah Entri',
-                        color: 'white'
-                    },
-                    ticks: { color: 'white' },
-                    grid: { color: '#3e3e3e' }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Waktu (Jam)',
-                        color: 'white'
-                    },
-                    ticks: { color: 'white' },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false,
-                },
-                title: {
-                    display: false
-                }
-            }
-        }
-    });
-}
-
-
-// ==============================================
-// 0. FUNGSI UTAMA: AMBIL SEMUA DATA
+// 0. FUNGSI UTAMA: AMBIL SEMUA DATA & RENDER SEMUA GRAFIK
 // ==============================================
 
 async function loadDashboard() {
@@ -138,18 +28,19 @@ async function loadDashboard() {
     }
 
     if (!data || data.length === 0) {
-        document.getElementById('activityBarChart').closest('.chart-card').innerHTML = '<p style="color:white; text-align:center;">Belum ada data yang cukup untuk analisis.</p>';
+        document.getElementById('activityBarChart').closest('.container').innerHTML = '<p style="color:white; text-align:center; padding-top: 50px;">Belum ada data yang cukup untuk analisis.</p>';
         return;
     }
     
-    // --- Panggil Fungsi Analisis dan Rendering ---
-    const activityData = prepareActivityData(data);
-    renderActivityChart(activityData);
+    // --- Panggil Fungsi Analisis dan Rendering dari Modul Terpisah ---
+    console.log("Data berhasil dimuat. Merender semua grafik...");
     
-    // TODO: Tambahkan panggilan untuk renderExpenseChart, renderMoodChart, dll. di sini
+    renderActivityChart(data);
+    renderExpenseChart(data);
+    renderMoodChart(data);
+    
+    // TODO: Panggil renderFinancialChart jika Anda membuatnya
 }
 
-// ==============================================
-// TITIK AWAL EKSEKUSI
-// ==============================================
+// =BASED ON THE USER'S REQUEST FOR SEPARATE JS FOR EACH GRAPH=
 document.addEventListener('DOMContentLoaded', loadDashboard);
