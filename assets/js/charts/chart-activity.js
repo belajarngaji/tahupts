@@ -1,6 +1,6 @@
-// assets/js/charts/chart-activity.js
+// assets/js/charts/chart-activity.js (FINAL REVISI)
 
-import { getHour } from "../utils.js"; // Akan kita buat di Langkah 2
+import { getHour } from "../utils.js"; 
 
 export function renderActivityChart(data) {
     const activityCount = {};
@@ -18,7 +18,7 @@ export function renderActivityChart(data) {
     const counts = hours.map(h => activityCount[h] || 0);
 
     const ctx = document.getElementById('activityBarChart').getContext('2d');
-    
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -32,7 +32,15 @@ export function renderActivityChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false, // Penting untuk layout mobile
+            maintainAspectRatio: false, 
+            
+            // PENTING: Menonaktifkan semua animasi (sesuai permintaan)
+            animation: false, 
+            
+            hover: {
+                mode: 'index',
+                intersect: false,
+            },
             scales: {
                 y: {
                     beginAtZero: true,
@@ -48,6 +56,7 @@ export function renderActivityChart(data) {
             },
             plugins: {
                 legend: { display: false },
+                title: { display: false }
             }
         }
     });
