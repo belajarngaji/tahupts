@@ -1,9 +1,10 @@
-// assets/js/dashboard.js (File Utama)
+// assets/js/dashboard.js (File Utama - REVISI)
 
 import { supabase } from "./supabase.js"; 
 import { renderActivityChart } from "./charts/chart-activity.js";
 import { renderExpenseChart } from "./charts/chart-expense.js";
 import { renderMoodChart } from "./charts/chart-mood.js";
+import { renderFinancialChart } from "./charts/chart-financial.js"; // IMPORT BARU
 
 const TABLE_NAME = 'activity_log';
 
@@ -14,10 +15,12 @@ const TABLE_NAME = 'activity_log';
 async function loadDashboard() {
     const loading = document.getElementById('loading-indicator');
     if (loading) loading.style.display = 'block';
-    
+
     const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select('*');
+        .select('*')
+        // Ambil data untuk 6 bulan terakhir saja untuk tren yang lebih relevan
+        .gte('start_time', new Date(new Date().setMonth(new Date().getMonth() - 6)).toISOString());
 
     if (loading) loading.style.display = 'none';
 
@@ -31,15 +34,14 @@ async function loadDashboard() {
         document.getElementById('activityBarChart').closest('.container').innerHTML = '<p style="color:white; text-align:center; padding-top: 50px;">Belum ada data yang cukup untuk analisis.</p>';
         return;
     }
-    
+
     // --- Panggil Fungsi Analisis dan Rendering dari Modul Terpisah ---
     console.log("Data berhasil dimuat. Merender semua grafik...");
-    
+
     renderActivityChart(data);
     renderExpenseChart(data);
     renderMoodChart(data);
-    
-    // TODO: Panggil renderFinancialChart jika Anda membuatnya
+    renderFinancialChart(data); // PANGGILAN BARU: Grafik Tren Keuangan Bulanan
 }
 
 // =BASED ON THE USER'S REQUEST FOR SEPARATE JS FOR EACH GRAPH=
